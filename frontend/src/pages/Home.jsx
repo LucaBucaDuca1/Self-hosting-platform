@@ -98,22 +98,26 @@ const Home = () => {
         title="Continue Watching"
         items={continueWatching}
         emptyMessage="Start watching something to see it here!"
+        onDelete={loadData}
       />
 
       <ContentRow
         title="My List"
         items={myList}
         emptyMessage="Add titles to your list to watch them later"
+        onDelete={loadData}
       />
 
       <ContentRow
         title="Trending Now"
         items={trending}
+        onDelete={loadData}
       />
 
       <ContentRow
         title="Recently Added"
         items={recentlyAdded}
+        onDelete={loadData}
       />
 
       {collections.map((collection) => (
@@ -121,6 +125,7 @@ const Home = () => {
           key={collection.id}
           title={collection.name}
           items={collection.items || []}
+          onDelete={loadData}
         />
       ))}
 

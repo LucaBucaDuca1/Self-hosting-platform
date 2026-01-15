@@ -48,6 +48,7 @@ const MyList = () => {
               media={item}
               inList={true}
               onListUpdate={loadMyList}
+              onDelete={loadMyList}
               style={{ animationDelay: `${index * 0.05}s` }}
             />
           ))}

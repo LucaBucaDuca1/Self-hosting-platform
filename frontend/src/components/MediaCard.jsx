@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { profile as profileApi, getPosterUrl } from '../services/api';
+import { profile as profileApi, media as mediaApi, getPosterUrl } from '../services/api';
 import './MediaCard.css';
 
-const MediaCard = ({ media, inList, onListUpdate, style, progress }) => {
+const MediaCard = ({ media, inList, onListUpdate, onDelete, style, progress }) => {
   const navigate = useNavigate();
-  const { currentProfile } = useAuth();
+  const { currentProfile, isAdmin } = useAuth();
   const [isInList, setIsInList] = useState(inList);
   const [showDetails, setShowDetails] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const posterUrl = getPosterUrl(media.poster_path);
   const placeholderUrl = `https://via.placeholder.com/300x450/141414/e50914?text=${encodeURIComponent(media.title)}`;
@@ -32,6 +33,28 @@ const MediaCard = ({ media, inList, onListUpdate, style, progress }) => {
     } catch (error) {
       console.error('Failed to update my list:', error);
     }
+  };
+
+  const handleDelete = async (e) => {
+    e.stopPropagation();
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async (e) => {
+    e.stopPropagation();
+    try {
+      await mediaApi.delete(media.id);
+      setShowDeleteConfirm(false);
+      onDelete?.();
+    } catch (error) {
+      console.error('Failed to delete media:', error);
+      alert('Failed to delete: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const cancelDelete = (e) => {
+    e.stopPropagation();
+    setShowDeleteConfirm(false);
   };
 
   // Show progress bar if provided (for continue watching)
@@ -93,6 +116,31 @@ const MediaCard = ({ media, inList, onListUpdate, style, progress }) => {
                 </svg>
               )}
             </button>
+
+            {isAdmin && (
+              <button
+                className="btn-icon btn-delete"
+                onClick={handleDelete}
+                title="Delete"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="delete-confirm-overlay" onClick={cancelDelete}>
+          <div className="delete-confirm-dialog" onClick={(e) => e.stopPropagation()}>
+            <h3>Delete "{media.title}"?</h3>
+            <p>This will permanently delete the video file and all associated data. This action cannot be undone.</p>
+            <div className="delete-confirm-actions">
+              <button className="btn-cancel" onClick={cancelDelete}>Cancel</button>
+              <button className="btn-delete-confirm" onClick={confirmDelete}>Delete</button>
+            </div>
           </div>
         </div>
       )}

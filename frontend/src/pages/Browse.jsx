@@ -125,6 +125,7 @@ const Browse = ({ type }) => {
               key={item.id}
               media={item}
               onListUpdate={loadMedia}
+              onDelete={loadMedia}
               style={{ animationDelay: `${index * 0.05}s` }}
             />
           ))}

@@ -3,7 +3,7 @@ import { MediaCard } from './MediaCard';
 import { SkeletonCard } from './SkeletonCard';
 import './ContentRow.css';
 
-export const ContentRow = ({ title, items, loading = false, emptyMessage }) => {
+export const ContentRow = ({ title, items, loading = false, emptyMessage, onDelete }) => {
   if (loading) {
     return (
       <div className="content-row fade-in">
@@ -40,6 +40,8 @@ export const ContentRow = ({ title, items, loading = false, emptyMessage }) => {
             key={item.id}
             media={item}
             style={{ animationDelay: `${index * 0.05}s` }}
+            progress={item.progress}
+            onDelete={onDelete}
           />
         ))}
       </div>

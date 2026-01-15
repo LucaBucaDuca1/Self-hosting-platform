@@ -168,6 +168,97 @@
   height: 20px;
 }
 
+.btn-delete {
+  border-color: rgba(229, 9, 20, 0.5);
+  background: rgba(229, 9, 20, 0.2);
+}
+
+.btn-delete:hover {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.delete-confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.delete-confirm-dialog {
+  background: var(--darker);
+  border-radius: 8px;
+  padding: 30px;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  animation: slideInUp 0.3s ease-out;
+}
+
+.delete-confirm-dialog h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: var(--white);
+}
+
+.delete-confirm-dialog p {
+  color: var(--light-gray);
+  line-height: 1.5;
+  margin-bottom: 25px;
+}
+
+.delete-confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.btn-cancel,
+.btn-delete-confirm {
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+}
+
+.btn-cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--white);
+}
+
+.btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-delete-confirm {
+  background: var(--primary);
+  color: var(--white);
+}
+
+.btn-delete-confirm:hover {
+  background: #b8070f;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 768px) {
   .media-card:hover {
     transform: scale(1.02);
@@ -185,5 +276,13 @@
   .btn-icon {
     width: 32px;
     height: 32px;
+  }
+
+  .delete-confirm-dialog {
+    padding: 20px;
+  }
+
+  .delete-confirm-dialog h3 {
+    font-size: 1.2rem;
   }
 }
