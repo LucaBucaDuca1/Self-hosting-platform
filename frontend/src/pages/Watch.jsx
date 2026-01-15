@@ -8,11 +8,14 @@ import './Watch.css';
 const Watch = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentProfile } = useAuth();
+  const { currentProfile, isAdmin } = useAuth();
   const videoRef = useRef(null);
   const [mediaData, setMediaData] = useState(null);
+  const [seriesData, setSeriesData] = useState(null);
+  const [allEpisodes, setAllEpisodes] = useState([]);
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showEpisodes, setShowEpisodes] = useState(false);
 
   useEffect(() => {
     loadMedia();
@@ -28,6 +31,32 @@ const Watch = () => {
     try {
       const response = await media.getById(id);
       setMediaData(response.data);
+
+      // If this is an episode, load all episodes from the series
+      if (response.data.type === 'episode' && response.data.series_id) {
+        try {
+          const seriesResponse = await media.getById(response.data.series_id);
+          setSeriesData(seriesResponse.data);
+
+          // Get all episodes for this series
+          const allEpisodesResponse = await media.getAll({
+            type: 'episode',
+            limit: 1000
+          });
+
+          // Filter episodes that belong to this series
+          const episodes = allEpisodesResponse.data.media.filter(
+            ep => ep.series_id === response.data.series_id
+          ).sort((a, b) => {
+            if (a.season !== b.season) return a.season - b.season;
+            return a.episode - b.episode;
+          });
+
+          setAllEpisodes(episodes);
+        } catch (error) {
+          console.error('Failed to load series data:', error);
+        }
+      }
     } catch (error) {
       console.error('Failed to load media:', error);
     } finally {
@@ -148,12 +177,96 @@ const Watch = () => {
         />
       </div>
 
+      {/* Episode Navigation for TV Shows */}
+      {allEpisodes.length > 0 && (
+        <div className="episodes-section">
+          <div className="episodes-header">
+            <h2>Episodes</h2>
+            <button
+              className="episodes-toggle"
+              onClick={() => setShowEpisodes(!showEpisodes)}
+            >
+              {showEpisodes ? 'Hide' : 'Show'} Episodes
+              <svg viewBox="0 0 24 24" fill="currentColor" style={{
+                transform: showEpisodes ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.3s'
+              }}>
+                <path d="M7 10l5 5 5-5z" />
+              </svg>
+            </button>
+          </div>
+
+          {showEpisodes && (
+            <div className="episodes-list">
+              {/* Group by seasons */}
+              {Object.entries(
+                allEpisodes.reduce((acc, ep) => {
+                  const season = ep.season || 1;
+                  if (!acc[season]) acc[season] = [];
+                  acc[season].push(ep);
+                  return acc;
+                }, {})
+              ).map(([season, episodes]) => (
+                <div key={season} className="season-group">
+                  <h3 className="season-title">Season {season}</h3>
+                  <div className="season-episodes">
+                    {episodes.map((ep) => (
+                      <div
+                        key={ep.id}
+                        className={`episode-item ${ep.id === parseInt(id) ? 'current' : ''}`}
+                        onClick={() => {
+                          if (ep.id !== parseInt(id)) {
+                            navigate(`/watch/${ep.id}`);
+                          }
+                        }}
+                      >
+                        <div className="episode-number">
+                          {ep.episode}
+                        </div>
+                        <div className="episode-info">
+                          <h4>{ep.title}</h4>
+                          {ep.description && (
+                            <p>{ep.description.slice(0, 120)}...</p>
+                          )}
+                        </div>
+                        {ep.id === parseInt(id) && (
+                          <div className="episode-playing">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="watch-info">
-        <h1>{mediaData.title}</h1>
-        {mediaData.year && <p className="watch-year">{mediaData.year}</p>}
-        {mediaData.season && mediaData.episode && (
-          <p className="watch-episode">Season {mediaData.season} • Episode {mediaData.episode}</p>
-        )}
+        <div className="watch-info-header">
+          <div>
+            <h1>{mediaData.title}</h1>
+            {mediaData.year && <p className="watch-year">{mediaData.year}</p>}
+            {mediaData.season && mediaData.episode && (
+              <p className="watch-episode">Season {mediaData.season} • Episode {mediaData.episode}</p>
+            )}
+          </div>
+          {isAdmin && (
+            <button
+              className="btn-edit-media"
+              onClick={() => navigate(`/upload?edit=${mediaData.id}`)}
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+              </svg>
+              Edit
+            </button>
+          )}
+        </div>
         {mediaData.description && <p className="watch-description">{mediaData.description}</p>}
         {mediaData.genres && <p className="watch-genres">Genres: {mediaData.genres}</p>}
       </div>

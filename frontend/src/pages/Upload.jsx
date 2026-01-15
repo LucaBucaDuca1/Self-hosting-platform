@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { media } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import './Upload.css';
 
 const Upload = () => {
   const { isAdmin } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [dragActive, setDragActive] = useState(false);
   const [uploadQueue, setUploadQueue] = useState([]);
   const [uploadedMedia, setUploadedMedia] = useState([]);
@@ -22,7 +24,30 @@ const Upload = () => {
 
   useEffect(() => {
     loadUploadedMedia();
-  }, []);
+
+    // Check if edit parameter exists
+    const editId = searchParams.get('edit');
+    if (editId) {
+      loadMediaForEdit(editId);
+    }
+  }, [searchParams]);
+
+  const loadMediaForEdit = async (mediaId) => {
+    try {
+      const response = await media.getById(mediaId);
+      setEditingMedia({
+        ...response.data,
+        genres: response.data.genres || '',
+        description: response.data.description || ''
+      });
+      setShowEditModal(true);
+      // Remove edit parameter from URL
+      setSearchParams({});
+    } catch (error) {
+      console.error('Failed to load media for editing:', error);
+      alert('Failed to load media for editing');
+    }
+  };
 
   const loadUploadedMedia = async () => {
     try {

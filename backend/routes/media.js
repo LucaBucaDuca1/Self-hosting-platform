@@ -344,29 +344,76 @@ router.put('/:id', authenticate, requireAdmin, (req, res) => {
 // Delete media (admin only)
 router.delete('/:id', authenticate, requireAdmin, (req, res) => {
   try {
-    const media = db.prepare('SELECT file_path, poster_path, background_path FROM media WHERE id = ?').get(req.params.id);
+    const media = db.prepare('SELECT file_path, poster_path, background_path, subtitle_tracks FROM media WHERE id = ?').get(req.params.id);
 
     if (media) {
-      // Delete files
+      // Delete video file
       if (media.file_path) {
         const videoPath = path.join(__dirname, '../../storage/videos', media.file_path);
-        if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
-      }
-      if (media.poster_path) {
-        const posterPath = path.join(__dirname, '../../storage/posters', media.poster_path);
-        if (fs.existsSync(posterPath)) fs.unlinkSync(posterPath);
-      }
-      if (media.background_path) {
-        const bgPath = path.join(__dirname, '../../storage/backgrounds', media.background_path);
-        if (fs.existsSync(bgPath)) fs.unlinkSync(bgPath);
+        if (fs.existsSync(videoPath)) {
+          try {
+            fs.unlinkSync(videoPath);
+          } catch (err) {
+            console.error('Failed to delete video file:', err);
+          }
+        }
       }
 
+      // Delete poster
+      if (media.poster_path) {
+        const posterPath = path.join(__dirname, '../../storage/posters', media.poster_path);
+        if (fs.existsSync(posterPath)) {
+          try {
+            fs.unlinkSync(posterPath);
+          } catch (err) {
+            console.error('Failed to delete poster:', err);
+          }
+        }
+      }
+
+      // Delete background
+      if (media.background_path) {
+        const bgPath = path.join(__dirname, '../../storage/backgrounds', media.background_path);
+        if (fs.existsSync(bgPath)) {
+          try {
+            fs.unlinkSync(bgPath);
+          } catch (err) {
+            console.error('Failed to delete background:', err);
+          }
+        }
+      }
+
+      // Delete subtitle files
+      if (media.subtitle_tracks) {
+        try {
+          const subtitles = JSON.parse(media.subtitle_tracks);
+          subtitles.forEach(sub => {
+            const subPath = path.join(__dirname, '../../storage/subtitles', sub.file);
+            if (fs.existsSync(subPath)) {
+              try {
+                fs.unlinkSync(subPath);
+              } catch (err) {
+                console.error('Failed to delete subtitle:', err);
+              }
+            }
+          });
+        } catch (err) {
+          console.error('Failed to parse/delete subtitles:', err);
+        }
+      }
+
+      // Delete from database
       db.prepare('DELETE FROM media WHERE id = ?').run(req.params.id);
+
+      console.log(`Media ${req.params.id} deleted successfully`);
+    } else {
+      return res.status(404).json({ error: 'Media not found' });
     }
 
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: 'Delete failed' });
+    console.error('Delete error:', error);
+    res.status(500).json({ error: 'Delete failed: ' + error.message });
   }
 });
 
