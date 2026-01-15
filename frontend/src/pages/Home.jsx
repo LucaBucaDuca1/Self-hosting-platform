@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { media, profile as profileApi, collections as collectionsApi, getBackgroundUrl } from '../services/api';
 import { ContentRow } from '../components/ContentRow';
 import { SkeletonHero, SkeletonRow } from '../components/SkeletonCard';
+import EpisodeSelector from '../components/EpisodeSelector';
 import './Home.css';
 
 const Home = () => {
@@ -17,6 +18,9 @@ const Home = () => {
   const [recommended, setRecommended] = useState([]);
   const [featured, setFeatured] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showEpisodeSelector, setShowEpisodeSelector] = useState(false);
+  const [seriesData, setSeriesData] = useState(null);
+  const [episodes, setEpisodes] = useState([]);
 
   useEffect(() => {
     loadData();
@@ -51,6 +55,32 @@ const Home = () => {
     }
   };
 
+  const handleFeaturedPlay = async () => {
+    if (!featured) return;
+
+    // If this is a series, show episode selector
+    if (featured.type === 'series') {
+      try {
+        const seriesResponse = await media.getById(featured.id);
+        const fetchedEpisodes = seriesResponse.data.episodes || [];
+
+        if (fetchedEpisodes.length > 0) {
+          setSeriesData(featured);
+          setEpisodes(fetchedEpisodes);
+          setShowEpisodeSelector(true);
+        } else {
+          alert('No episodes found for this series');
+        }
+      } catch (error) {
+        console.error('Failed to load series episodes:', error);
+        alert('Failed to load series');
+      }
+    } else {
+      // For movies and episodes, navigate directly
+      navigate(`/watch/${featured.id}`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="page-container">
@@ -82,7 +112,7 @@ const Home = () => {
             <div className="hero-buttons">
               <button
                 className="btn btn-primary"
-                onClick={() => navigate(`/watch/${featured.id}`)}
+                onClick={handleFeaturedPlay}
               >
                 <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 24, height: 24 }}>
                   <path d="M8 5v14l11-7z" />
@@ -146,6 +176,14 @@ const Home = () => {
           <p>Your personal streaming service is ready.</p>
           <p>Start by uploading some content!</p>
         </div>
+      )}
+
+      {showEpisodeSelector && seriesData && (
+        <EpisodeSelector
+          series={seriesData}
+          episodes={episodes}
+          onClose={() => setShowEpisodeSelector(false)}
+        />
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { profile as profileApi, media as mediaApi, getPosterUrl } from '../services/api';
+import EpisodeSelector from './EpisodeSelector';
 import './MediaCard.css';
 
 const MediaCard = ({ media, inList, onListUpdate, onDelete, style, progress }) => {
@@ -10,6 +11,9 @@ const MediaCard = ({ media, inList, onListUpdate, onDelete, style, progress }) =
   const [isInList, setIsInList] = useState(inList);
   const [showDetails, setShowDetails] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEpisodeSelector, setShowEpisodeSelector] = useState(false);
+  const [seriesData, setSeriesData] = useState(null);
+  const [episodes, setEpisodes] = useState([]);
 
   const posterUrl = getPosterUrl(media.poster_path);
   const placeholderUrl = `https://via.placeholder.com/300x450/141414/e50914?text=${encodeURIComponent(media.title)}`;
@@ -17,19 +21,16 @@ const MediaCard = ({ media, inList, onListUpdate, onDelete, style, progress }) =
   const handlePlay = async (e) => {
     e.stopPropagation();
 
-    // If this is a series, navigate to the first episode instead
+    // If this is a series, show episode selector
     if (media.type === 'series') {
       try {
         const seriesResponse = await mediaApi.getById(media.id);
-        const episodes = seriesResponse.data.episodes || [];
+        const fetchedEpisodes = seriesResponse.data.episodes || [];
 
-        if (episodes.length > 0) {
-          // Sort by season and episode to get the first one
-          const sortedEpisodes = episodes.sort((a, b) => {
-            if (a.season !== b.season) return a.season - b.season;
-            return a.episode - b.episode;
-          });
-          navigate(`/watch/${sortedEpisodes[0].id}`);
+        if (fetchedEpisodes.length > 0) {
+          setSeriesData(media);
+          setEpisodes(fetchedEpisodes);
+          setShowEpisodeSelector(true);
         } else {
           alert('No episodes found for this series');
         }
@@ -167,6 +168,14 @@ const MediaCard = ({ media, inList, onListUpdate, onDelete, style, progress }) =
             </div>
           </div>
         </div>
+      )}
+
+      {showEpisodeSelector && seriesData && (
+        <EpisodeSelector
+          series={seriesData}
+          episodes={episodes}
+          onClose={() => setShowEpisodeSelector(false)}
+        />
       )}
 
       <div className="media-title">{media.title}</div>
