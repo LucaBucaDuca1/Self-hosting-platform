@@ -4,12 +4,15 @@
   left: 0;
   right: 0;
   z-index: 100;
-  transition: background-color 0.3s;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
 }
 
 .navbar.scrolled {
-  background: var(--darker);
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .navbar-container {
@@ -28,26 +31,56 @@
 
 .navbar-logo {
   font-size: 2rem;
-  font-weight: 700;
-  color: var(--primary);
+  font-weight: 800;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   letter-spacing: 2px;
+  text-shadow: 0 0 30px rgba(229, 9, 20, 0.3);
+  transition: all 0.3s;
+}
+
+.navbar-logo:hover {
+  filter: brightness(1.2);
+  transform: scale(1.02);
 }
 
 .navbar-links {
   display: flex;
-  gap: 25px;
+  gap: 30px;
 }
 
 .navbar-links a {
   color: var(--light-gray);
   font-size: 0.95rem;
-  transition: color 0.3s;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  padding: 8px 0;
+}
+
+.navbar-links a::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--gradient-primary);
+  transform: translateX(-50%);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--glow-primary);
 }
 
 .navbar-links a:hover,
 .navbar-links a.active {
   color: var(--white);
+}
+
+.navbar-links a:hover::before,
+.navbar-links a.active::before {
+  width: 100%;
 }
 
 .navbar-links a.active::after {
@@ -115,13 +148,26 @@
   position: absolute;
   top: 100%;
   right: 0;
-  margin-top: 10px;
-  background: rgba(0, 0, 0, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  min-width: 180px;
-  padding: 10px 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  margin-top: 15px;
+  background: rgba(26, 26, 26, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  min-width: 200px;
+  padding: 8px;
+  box-shadow: var(--shadow-xl);
+  animation: dropdownSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .profile-dropdown a,

@@ -6,11 +6,26 @@
 
 :root {
   --primary: #e50914;
-  --dark: #141414;
+  --primary-dark: #b8070f;
+  --primary-light: #ff1e2c;
+  --accent: #00d4ff;
+  --accent-glow: rgba(0, 212, 255, 0.3);
+  --dark: #0f0f0f;
   --darker: #0a0a0a;
+  --surface: #1a1a1a;
+  --surface-light: #242424;
   --gray: #808080;
   --light-gray: #b3b3b3;
   --white: #ffffff;
+  --gradient-primary: linear-gradient(135deg, #e50914 0%, #ff1e2c 100%);
+  --gradient-dark: linear-gradient(180deg, rgba(10, 10, 10, 0) 0%, #0a0a0a 100%);
+  --gradient-accent: linear-gradient(135deg, #00d4ff 0%, #0066ff 100%);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.7);
+  --glow-primary: 0 0 20px rgba(229, 9, 20, 0.3);
+  --glow-accent: 0 0 20px var(--accent-glow);
 }
 
 body {
@@ -19,13 +34,27 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--dark);
+  background: linear-gradient(180deg, #0a0a0a 0%, #1a0f0f 50%, #0a0a0a 100%);
+  background-attachment: fixed;
   color: var(--white);
   overflow-x: hidden;
 }
 
 #root {
   min-height: 100vh;
+  position: relative;
+}
+
+#root::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  background: radial-gradient(ellipse at top, rgba(229, 9, 20, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 a {
@@ -38,6 +67,11 @@ button {
   border: none;
   outline: none;
   font-family: inherit;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:active {
+  transform: scale(0.98);
 }
 
 input, textarea {
@@ -45,19 +79,20 @@ input, textarea {
 }
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--dark);
+  background: var(--darker);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--gray);
-  border-radius: 4px;
+  background: linear-gradient(180deg, var(--surface-light) 0%, var(--gray) 100%);
+  border-radius: 5px;
+  border: 2px solid var(--darker);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--light-gray);
+  background: linear-gradient(180deg, var(--light-gray) 0%, var(--gray) 100%);
 }
