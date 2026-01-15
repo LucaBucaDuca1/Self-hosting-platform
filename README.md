@@ -41,10 +41,15 @@ A private, self-hosted streaming service built from scratch. Your personal Netfl
 - **Results Count**: See how many items match your filters
 - **Responsive Design**: Perfect on desktop, tablet, and mobile
 
-### 🔐 Security & Access Control
-- **Admin Accounts**: First user becomes admin
-- **Upload Restrictions**: Only admins can upload (local network only)
+### 🔐 Enterprise-Grade Security
+- **LAN-Only Uploads**: Uploads restricted to local network only
+- **Rate Limiting**: Login (5/15min), uploads (10/hour) protection
+- **Session Management**: Track and manage all logged-in devices
+- **Audit Logging**: Complete trail of uploads and sensitive actions
+- **File Validation**: MIME type + extension verification
+- **Admin-Only Uploads**: Only admin users can upload content
 - **JWT Authentication**: Secure token-based auth
+- **Device Management**: View and logout from specific devices
 - **Profile Isolation**: Each profile has separate watch history and list
 
 ### 📤 Upload System (Admin Only)
@@ -70,7 +75,38 @@ A private, self-hosted streaming service built from scratch. Your personal Netfl
 - At least 20GB free disk space (for content)
 - Modern browser (Chrome, Firefox, Safari, Edge)
 
-## 🚀 Quick Start
+## 🚀 One-Click Quick Start ⚡
+
+### The Fastest Way (Recommended)
+
+**macOS / Linux:**
+```bash
+./start.sh
+```
+
+**Windows:**
+```cmd
+start.bat
+```
+
+Or just **double-click** `start.sh` (Mac/Linux) or `start.bat` (Windows) in your file manager!
+
+The startup script will automatically:
+- ✓ Check if Node.js is installed
+- ✓ Install dependencies (first run only, 2-5 minutes)
+- ✓ Create `.env` file if needed
+- ✓ Check port availability
+- ✓ Start backend + frontend servers
+- ✓ Open your browser to `http://localhost:5173`
+
+See [QUICKSTART.md](QUICKSTART.md) for detailed one-click setup guide.
+
+---
+
+### Manual Setup (Alternative)
+
+<details>
+<summary>Click to expand manual installation steps</summary>
 
 ### 1. Install Dependencies
 
@@ -139,9 +175,19 @@ npm start
 
 The app will be available at `http://localhost:5000`
 
-### 4. Create Your Account
+### 4. Start the Application
 
-1. Open `http://localhost:5173` (or `http://localhost:5000` in production)
+```bash
+npm run dev
+```
+
+</details>
+
+---
+
+### Create Your Account
+
+1. Browser opens automatically to `http://localhost:5173`
 2. Click "Sign up now"
 3. Create your account (first account becomes admin)
 4. Create a profile
@@ -278,7 +324,33 @@ PORT=3000
 - Use your PC's IP address: `http://192.168.X.X:5000`
 - Check if server is running
 
-## 🆕 What's New - Phase 1 Complete!
+## 🆕 What's New
+
+### Phase 2 - Enterprise Security + One-Click Startup! 🔐
+
+#### Production-Ready Security
+- ✅ **LAN-Only Uploads**: Automatically blocks uploads from non-local networks
+- ✅ **Rate Limiting**: Login attempts (5/15min), uploads (10/hour), images (20/hour)
+- ✅ **Session Management**: Track all logged-in devices with full details
+- ✅ **Audit Logging**: Complete trail of uploads and sensitive actions
+- ✅ **Enhanced File Validation**: MIME type + extension verification
+- ✅ **Device Management UI**: View and logout from specific devices
+
+#### One-Click Deployment
+- ✅ **Automatic Setup Scripts**: `start.sh` (Mac/Linux) and `start.bat` (Windows)
+- ✅ **Dependency Checking**: Auto-detects Node.js and npm
+- ✅ **Auto-Install**: Installs dependencies on first run
+- ✅ **Port Validation**: Checks if ports are available
+- ✅ **Browser Auto-Open**: Opens your browser automatically
+- ✅ **Professional Output**: Color-coded, clear console messages
+
+#### New Features
+- ✅ **Settings Page**: Manage devices, view sessions, account info
+- ✅ **Session Tracking**: See device type, IP, login time, last active
+- ✅ **Logout Devices**: Remove specific devices or logout all
+- ✅ **Current Device Badge**: Highlights your current session
+
+### Phase 1 - Premium Streaming Experience! 🎬
 
 ### Premium Streaming Experience
 - ✅ **Skeleton Loading States**: No more blank screens - elegant loading animations everywhere
