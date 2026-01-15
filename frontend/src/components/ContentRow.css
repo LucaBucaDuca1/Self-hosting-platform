@@ -1,0 +1,97 @@
+.content-row {
+  padding: 0 60px;
+  margin-bottom: 50px;
+  animation: fadeIn 0.6s ease-out;
+}
+
+.content-row h2 {
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  font-weight: 600;
+  color: var(--white);
+  animation: slideInLeft 0.5s ease-out;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  animation: fadeIn 0.7s ease-out;
+}
+
+.content-grid > * {
+  animation: fadeIn 0.5s ease-out both;
+}
+
+.empty-row-message {
+  padding: 40px;
+  text-align: center;
+  color: var(--gray);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.empty-row-message p {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* Horizontal scrolling variant for large content */
+.content-row.horizontal {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 20px;
+}
+
+.content-row.horizontal .content-grid {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 15px;
+  padding-bottom: 10px;
+}
+
+.content-row.horizontal .content-grid > * {
+  min-width: 200px;
+  flex-shrink: 0;
+}
+
+/* Hide scrollbar but keep functionality */
+.content-row.horizontal::-webkit-scrollbar {
+  height: 8px;
+}
+
+.content-row.horizontal::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.content-row.horizontal::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.content-row.horizontal::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 768px) {
+  .content-row {
+    padding: 0 30px;
+    margin-bottom: 40px;
+  }
+
+  .content-row h2 {
+    font-size: 1.4rem;
+    margin-bottom: 15px;
+  }
+
+  .content-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+  }
+
+  .content-row.horizontal .content-grid > * {
+    min-width: 150px;
+  }
+}

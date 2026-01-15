@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { media, profile as profileApi, getBackgroundUrl } from '../services/api';
-import MediaCard from '../components/MediaCard';
+import { media, profile as profileApi, collections as collectionsApi, getBackgroundUrl } from '../services/api';
+import { ContentRow } from '../components/ContentRow';
+import { SkeletonHero, SkeletonRow } from '../components/SkeletonCard';
 import './Home.css';
 
 const Home = () => {
@@ -11,6 +12,8 @@ const Home = () => {
   const [continueWatching, setContinueWatching] = useState([]);
   const [recentlyAdded, setRecentlyAdded] = useState([]);
   const [trending, setTrending] = useState([]);
+  const [myList, setMyList] = useState([]);
+  const [collections, setCollections] = useState([]);
   const [featured, setFeatured] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,15 +23,21 @@ const Home = () => {
 
   const loadData = async () => {
     try {
-      const [continueRes, recentRes, trendingRes] = await Promise.all([
-        profileApi.getContinueWatching(currentProfile.id),
-        media.getRecent(),
-        media.getTrending()
+      setLoading(true);
+      const [continueRes, recentRes, trendingRes, myListRes, collectionsRes] = await Promise.all([
+        profileApi.getContinueWatching(currentProfile.id).catch(() => ({ data: [] })),
+        media.getRecent().catch(() => ({ data: [] })),
+        media.getTrending().catch(() => ({ data: [] })),
+        profileApi.getMyList(currentProfile.id).catch(() => ({ data: [] })),
+        collectionsApi.getAll().catch(() => ({ data: [] }))
       ]);
 
-      setContinueWatching(continueRes.data);
+      const continueData = continueRes.data.map(item => ({ ...item, progress: item.progress }));
+      setContinueWatching(continueData);
       setRecentlyAdded(recentRes.data);
       setTrending(trendingRes.data);
+      setMyList(myListRes.data);
+      setCollections(collectionsRes.data);
 
       // Set featured to first item in trending or recent
       setFeatured(trendingRes.data[0] || recentRes.data[0] || null);
@@ -41,8 +50,11 @@ const Home = () => {
 
   if (loading) {
     return (
-      <div className="loading-screen">
-        <div className="loading-spinner"></div>
+      <div className="page-container">
+        <SkeletonHero />
+        <SkeletonRow count={6} />
+        <SkeletonRow count={6} />
+        <SkeletonRow count={6} />
       </div>
     );
   }
@@ -82,53 +94,38 @@ const Home = () => {
         </div>
       )}
 
-      {continueWatching.length > 0 && (
-        <div className="content-row">
-          <h2>Continue Watching</h2>
-          <div className="content-grid">
-            {continueWatching.map((item) => (
-              <MediaCard
-                key={item.id}
-                media={item}
-                onListUpdate={loadData}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      <ContentRow
+        title="Continue Watching"
+        items={continueWatching}
+        emptyMessage="Start watching something to see it here!"
+      />
 
-      {trending.length > 0 && (
-        <div className="content-row">
-          <h2>Trending Now</h2>
-          <div className="content-grid">
-            {trending.map((item) => (
-              <MediaCard
-                key={item.id}
-                media={item}
-                onListUpdate={loadData}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      <ContentRow
+        title="My List"
+        items={myList}
+        emptyMessage="Add titles to your list to watch them later"
+      />
 
-      {recentlyAdded.length > 0 && (
-        <div className="content-row">
-          <h2>Recently Added</h2>
-          <div className="content-grid">
-            {recentlyAdded.map((item) => (
-              <MediaCard
-                key={item.id}
-                media={item}
-                onListUpdate={loadData}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      <ContentRow
+        title="Trending Now"
+        items={trending}
+      />
+
+      <ContentRow
+        title="Recently Added"
+        items={recentlyAdded}
+      />
+
+      {collections.map((collection) => (
+        <ContentRow
+          key={collection.id}
+          title={collection.name}
+          items={collection.items || []}
+        />
+      ))}
 
       {!featured && recentlyAdded.length === 0 && (
-        <div className="empty-state">
+        <div className="empty-state fade-in">
           <h2>Welcome to Zeloz Streaming</h2>
           <p>Your personal streaming service is ready.</p>
           <p>Start by uploading some content!</p>

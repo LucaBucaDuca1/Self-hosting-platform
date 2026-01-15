@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { profile as profileApi } from '../services/api';
-import MediaCard from '../components/MediaCard';
+import { MediaCard } from '../components/MediaCard';
+import { SkeletonCard } from '../components/SkeletonCard';
 
 const MyList = () => {
   const { currentProfile } = useAuth();
@@ -24,33 +25,35 @@ const MyList = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="loading-screen">
-        <div className="loading-spinner"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="page-container browse-page">
-      <div className="browse-header">
+      <div className="browse-header fade-in">
         <h1>My List</h1>
+        {!loading && items.length > 0 && (
+          <p className="results-count">{items.length} {items.length === 1 ? 'title' : 'titles'} saved</p>
+        )}
       </div>
 
-      {items.length > 0 ? (
-        <div className="content-grid">
-          {items.map((item) => (
+      {loading ? (
+        <div className="content-grid fade-in">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      ) : items.length > 0 ? (
+        <div className="content-grid fade-in">
+          {items.map((item, index) => (
             <MediaCard
               key={item.id}
               media={item}
               inList={true}
               onListUpdate={loadMyList}
+              style={{ animationDelay: `${index * 0.05}s` }}
             />
           ))}
         </div>
       ) : (
-        <div className="empty-state">
+        <div className="empty-state fade-in">
           <h2>Your list is empty</h2>
           <p>Add movies and shows to your list to watch them later</p>
         </div>

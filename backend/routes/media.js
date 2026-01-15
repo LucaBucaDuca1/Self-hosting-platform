@@ -109,38 +109,91 @@ router.post('/upload-image', authenticate, requireAdmin, multer({
 // Get all media (with filters)
 router.get('/', authenticate, (req, res) => {
   try {
-    const { type, genre, year, search, limit = 50, offset = 0 } = req.query;
+    const { type, genre, year, search, sort = 'recent', limit = 50, offset = 0 } = req.query;
 
     let query = 'SELECT * FROM media WHERE 1=1';
     const params = [];
 
-    if (type) {
+    if (type && type !== 'all') {
       query += ' AND type = ?';
       params.push(type);
     }
 
-    if (genre) {
+    if (genre && genre !== 'all') {
       query += ' AND genres LIKE ?';
       params.push(`%${genre}%`);
     }
 
-    if (year) {
+    if (year && year !== 'all') {
       query += ' AND year = ?';
-      params.push(year);
+      params.push(parseInt(year));
     }
 
     if (search) {
-      query += ' AND title LIKE ?';
-      params.push(`%${search}%`);
+      query += ' AND (title LIKE ? OR description LIKE ? OR genres LIKE ?)';
+      const searchTerm = `%${search}%`;
+      params.push(searchTerm, searchTerm, searchTerm);
     }
 
-    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    // Sorting
+    switch (sort) {
+      case 'title-asc':
+        query += ' ORDER BY title ASC';
+        break;
+      case 'title-desc':
+        query += ' ORDER BY title DESC';
+        break;
+      case 'year-asc':
+        query += ' ORDER BY year ASC, title ASC';
+        break;
+      case 'year-desc':
+        query += ' ORDER BY year DESC, title ASC';
+        break;
+      case 'recent':
+      default:
+        query += ' ORDER BY created_at DESC';
+        break;
+    }
+
+    query += ' LIMIT ? OFFSET ?';
     params.push(parseInt(limit), parseInt(offset));
 
     const media = db.prepare(query).all(...params);
 
-    res.json(media);
+    // Get total count for pagination
+    let countQuery = 'SELECT COUNT(*) as total FROM media WHERE 1=1';
+    const countParams = [];
+
+    if (type && type !== 'all') {
+      countQuery += ' AND type = ?';
+      countParams.push(type);
+    }
+
+    if (genre && genre !== 'all') {
+      countQuery += ' AND genres LIKE ?';
+      countParams.push(`%${genre}%`);
+    }
+
+    if (year && year !== 'all') {
+      countQuery += ' AND year = ?';
+      countParams.push(parseInt(year));
+    }
+
+    if (search) {
+      countQuery += ' AND (title LIKE ? OR description LIKE ? OR genres LIKE ?)';
+      const searchTerm = `%${search}%`;
+      countParams.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    const { total } = db.prepare(countQuery).get(...countParams);
+
+    res.json({
+      media,
+      total,
+      hasMore: offset + media.length < total
+    });
   } catch (error) {
+    console.error('Media fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch media' });
   }
 });

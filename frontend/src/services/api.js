@@ -53,6 +53,19 @@ export const profile = {
   getWatchProgress: (profileId, mediaId) => api.get(`/profile/${profileId}/watch-progress/${mediaId}`)
 };
 
+// Collections endpoints
+export const collections = {
+  getAll: () => api.get('/collections'),
+  getById: (id) => api.get(`/collections/${id}`),
+  create: (data) => api.post('/collections', data),
+  update: (id, data) => api.put(`/collections/${id}`, data),
+  delete: (id) => api.delete(`/collections/${id}`),
+  addItem: (collectionId, mediaId, sortOrder = 0) =>
+    api.post(`/collections/${collectionId}/items`, { mediaId, sortOrder }),
+  removeItem: (collectionId, mediaId) =>
+    api.delete(`/collections/${collectionId}/items/${mediaId}`)
+};
+
 // Stream endpoints
 export const getStreamUrl = (mediaId) => `/api/stream/video/${mediaId}`;
 export const getPosterUrl = (filename) => filename ? `/api/stream/poster/${filename}` : null;

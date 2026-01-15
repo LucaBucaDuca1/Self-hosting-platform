@@ -18,6 +18,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/media', require('./routes/media'));
 app.use('/api/profile', require('./routes/profile'));
+app.use('/api/collections', require('./routes/collections'));
 app.use('/api/stream', require('./routes/stream'));
 
 // Health check
