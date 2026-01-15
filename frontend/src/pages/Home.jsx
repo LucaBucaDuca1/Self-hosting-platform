@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useSeriesCache } from '../contexts/SeriesCacheContext';
 import { media, profile as profileApi, collections as collectionsApi, getBackgroundUrl } from '../services/api';
 import { ContentRow } from '../components/ContentRow';
 import { SkeletonHero, SkeletonRow } from '../components/SkeletonCard';
@@ -10,6 +11,7 @@ import './Home.css';
 const Home = () => {
   const navigate = useNavigate();
   const { currentProfile } = useAuth();
+  const { getSeriesEpisodes } = useSeriesCache();
   const [continueWatching, setContinueWatching] = useState([]);
   const [recentlyAdded, setRecentlyAdded] = useState([]);
   const [trending, setTrending] = useState([]);
@@ -21,6 +23,7 @@ const Home = () => {
   const [showEpisodeSelector, setShowEpisodeSelector] = useState(false);
   const [seriesData, setSeriesData] = useState(null);
   const [episodes, setEpisodes] = useState([]);
+  const [loadingEpisodes, setLoadingEpisodes] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -56,13 +59,13 @@ const Home = () => {
   };
 
   const handleFeaturedPlay = async () => {
-    if (!featured) return;
+    if (!featured || loadingEpisodes) return;
 
     // If this is a series, show episode selector
     if (featured.type === 'series') {
       try {
-        const seriesResponse = await media.getById(featured.id);
-        const fetchedEpisodes = seriesResponse.data.episodes || [];
+        setLoadingEpisodes(true);
+        const fetchedEpisodes = await getSeriesEpisodes(featured.id);
 
         if (fetchedEpisodes.length > 0) {
           setSeriesData(featured);
@@ -74,6 +77,8 @@ const Home = () => {
       } catch (error) {
         console.error('Failed to load series episodes:', error);
         alert('Failed to load series');
+      } finally {
+        setLoadingEpisodes(false);
       }
     } else {
       // For movies and episodes, navigate directly

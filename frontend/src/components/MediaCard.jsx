@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useSeriesCache } from '../contexts/SeriesCacheContext';
 import { profile as profileApi, media as mediaApi, getPosterUrl } from '../services/api';
 import EpisodeSelector from './EpisodeSelector';
 import './MediaCard.css';
@@ -8,12 +9,14 @@ import './MediaCard.css';
 const MediaCard = ({ media, inList, onListUpdate, onDelete, style, progress }) => {
   const navigate = useNavigate();
   const { currentProfile, isAdmin } = useAuth();
+  const { getSeriesEpisodes } = useSeriesCache();
   const [isInList, setIsInList] = useState(inList);
   const [showDetails, setShowDetails] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEpisodeSelector, setShowEpisodeSelector] = useState(false);
   const [seriesData, setSeriesData] = useState(null);
   const [episodes, setEpisodes] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const posterUrl = getPosterUrl(media.poster_path);
   const placeholderUrl = `https://via.placeholder.com/300x450/141414/e50914?text=${encodeURIComponent(media.title)}`;
@@ -23,9 +26,11 @@ const MediaCard = ({ media, inList, onListUpdate, onDelete, style, progress }) =
 
     // If this is a series, show episode selector
     if (media.type === 'series') {
+      if (loading) return; // Prevent multiple clicks
+
       try {
-        const seriesResponse = await mediaApi.getById(media.id);
-        const fetchedEpisodes = seriesResponse.data.episodes || [];
+        setLoading(true);
+        const fetchedEpisodes = await getSeriesEpisodes(media.id);
 
         if (fetchedEpisodes.length > 0) {
           setSeriesData(media);
@@ -37,6 +42,8 @@ const MediaCard = ({ media, inList, onListUpdate, onDelete, style, progress }) =
       } catch (error) {
         console.error('Failed to load series episodes:', error);
         alert('Failed to load series');
+      } finally {
+        setLoading(false);
       }
     } else {
       // For movies and episodes, navigate directly
