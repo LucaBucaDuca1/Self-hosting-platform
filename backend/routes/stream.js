@@ -157,4 +157,32 @@ router.get('/background/:filename', (req, res) => {
   }
 });
 
+// Serve subtitle file
+router.get('/subtitle/:filename', (req, res) => {
+  try {
+    const subtitlePath = path.join(__dirname, '../../storage/subtitles', req.params.filename);
+
+    if (!fs.existsSync(subtitlePath)) {
+      return res.status(404).json({ error: 'Subtitle not found' });
+    }
+
+    // Set appropriate content type based on file extension
+    const ext = path.extname(req.params.filename).toLowerCase();
+    let contentType = 'text/plain';
+
+    if (ext === '.vtt') {
+      contentType = 'text/vtt';
+    } else if (ext === '.srt') {
+      contentType = 'application/x-subrip';
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+    res.sendFile(subtitlePath);
+  } catch (error) {
+    console.error('Subtitle serve error:', error);
+    res.status(500).json({ error: 'Failed to serve subtitle' });
+  }
+});
+
 module.exports = router;

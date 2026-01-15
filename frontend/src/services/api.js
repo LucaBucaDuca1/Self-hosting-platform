@@ -42,7 +42,8 @@ export const media = {
   update: (id, data) => api.put(`/media/${id}`, data),
   delete: (id) => api.delete(`/media/${id}`),
   getRecent: () => api.get('/media/featured/recent'),
-  getTrending: () => api.get('/media/featured/trending')
+  getTrending: () => api.get('/media/featured/trending'),
+  getRecommended: (profileId) => api.get(`/media/recommended/${profileId}`)
 };
 
 // Profile endpoints

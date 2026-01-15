@@ -14,6 +14,7 @@ const Home = () => {
   const [trending, setTrending] = useState([]);
   const [myList, setMyList] = useState([]);
   const [collections, setCollections] = useState([]);
+  const [recommended, setRecommended] = useState([]);
   const [featured, setFeatured] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -24,12 +25,13 @@ const Home = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [continueRes, recentRes, trendingRes, myListRes, collectionsRes] = await Promise.all([
+      const [continueRes, recentRes, trendingRes, myListRes, collectionsRes, recommendedRes] = await Promise.all([
         profileApi.getContinueWatching(currentProfile.id).catch(() => ({ data: [] })),
         media.getRecent().catch(() => ({ data: [] })),
         media.getTrending().catch(() => ({ data: [] })),
         profileApi.getMyList(currentProfile.id).catch(() => ({ data: [] })),
-        collectionsApi.getAll().catch(() => ({ data: [] }))
+        collectionsApi.getAll().catch(() => ({ data: [] })),
+        media.getRecommended(currentProfile.id).catch(() => ({ data: [] }))
       ]);
 
       const continueData = continueRes.data.map(item => ({ ...item, progress: item.progress }));
@@ -38,6 +40,7 @@ const Home = () => {
       setTrending(trendingRes.data);
       setMyList(myListRes.data);
       setCollections(collectionsRes.data);
+      setRecommended(recommendedRes.data);
 
       // Set featured to first item in trending or recent
       setFeatured(trendingRes.data[0] || recentRes.data[0] || null);
@@ -107,6 +110,14 @@ const Home = () => {
         emptyMessage="Add titles to your list to watch them later"
         onDelete={loadData}
       />
+
+      {recommended.length > 0 && (
+        <ContentRow
+          title="Recommended For You"
+          items={recommended}
+          onDelete={loadData}
+        />
+      )}
 
       <ContentRow
         title="Trending Now"

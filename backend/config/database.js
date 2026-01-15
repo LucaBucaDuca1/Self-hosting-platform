@@ -52,6 +52,7 @@ function initializeDatabase() {
       season INTEGER,
       episode INTEGER,
       series_id INTEGER,
+      subtitle_tracks TEXT,
       uploaded_by INTEGER,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (uploaded_by) REFERENCES users(id),
@@ -152,6 +153,20 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at);
     CREATE INDEX IF NOT EXISTS idx_rate_limits_key ON rate_limits(key);
   `);
+
+  // Run migrations
+  try {
+    // Add subtitle_tracks column if it doesn't exist
+    const tableInfo = db.prepare('PRAGMA table_info(media)').all();
+    const hasSubtitleTracks = tableInfo.some(col => col.name === 'subtitle_tracks');
+
+    if (!hasSubtitleTracks) {
+      db.exec('ALTER TABLE media ADD COLUMN subtitle_tracks TEXT');
+      console.log('Added subtitle_tracks column to media table');
+    }
+  } catch (error) {
+    console.error('Migration error:', error);
+  }
 
   console.log('Database initialized successfully');
 }

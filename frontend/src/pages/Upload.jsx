@@ -563,6 +563,63 @@ const Upload = () => {
               />
             </div>
 
+            <div className="form-group">
+              <label>Subtitles</label>
+              <div className="subtitle-section">
+                <div className="form-row">
+                  <div className="form-group">
+                    <input
+                      type="text"
+                      placeholder="Language (e.g., English, Spanish)"
+                      id="subtitle-language"
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <input
+                      type="file"
+                      accept=".srt,.vtt,.ass,.ssa"
+                      id="subtitle-file"
+                      className="form-input"
+                      style={{ padding: '10px' }}
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={async () => {
+                    const langInput = document.getElementById('subtitle-language');
+                    const fileInput = document.getElementById('subtitle-file');
+
+                    if (!langInput.value || !fileInput.files[0]) {
+                      alert('Please provide both language and subtitle file');
+                      return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('subtitle', fileInput.files[0]);
+                    formData.append('mediaId', editingMedia.id);
+                    formData.append('language', langInput.value);
+                    formData.append('label', langInput.value);
+
+                    try {
+                      await api.post('/media/upload-subtitle', formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' }
+                      });
+                      alert('Subtitle uploaded successfully!');
+                      langInput.value = '';
+                      fileInput.value = '';
+                    } catch (error) {
+                      alert('Failed to upload subtitle: ' + error.message);
+                    }
+                  }}
+                >
+                  Upload Subtitle
+                </button>
+              </div>
+            </div>
+
             <div className="modal-actions">
               <button className="btn btn-secondary" onClick={() => setShowEditModal(false)}>
                 Cancel

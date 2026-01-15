@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { media, profile as profileApi, getStreamUrl } from '../services/api';
+import VideoPlayer from '../components/VideoPlayer';
 import './Watch.css';
 
 const Watch = () => {
@@ -92,6 +93,19 @@ const Watch = () => {
     }
   };
 
+  const getNextEpisode = () => {
+    if (mediaData.type === 'episode' && mediaData.series_id) {
+      try {
+        // This would need to be populated from series data
+        // For now, return null and handle in the component
+        return null;
+      } catch (error) {
+        return null;
+      }
+    }
+    return null;
+  };
+
   useEffect(() => {
     const interval = setInterval(saveProgress, 10000); // Save every 10 seconds
     return () => clearInterval(interval);
@@ -123,21 +137,15 @@ const Watch = () => {
       </button>
 
       <div className="video-container">
-        <video
-          ref={videoRef}
-          controls
-          autoPlay
-          preload="auto"
-          playsInline
-          crossOrigin="anonymous"
+        <VideoPlayer
+          videoRef={videoRef}
+          streamUrl={getStreamUrl(id)}
           onTimeUpdate={handleTimeUpdate}
-          onPause={handlePause}
           onEnded={handleEnded}
-          className="video-player"
-        >
-          <source src={getStreamUrl(id)} type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
+          hasNextEpisode={mediaData.type === 'episode' && mediaData.series_id}
+          subtitles={mediaData.subtitle_tracks ? JSON.parse(mediaData.subtitle_tracks) : []}
+          mediaData={mediaData}
+        />
       </div>
 
       <div className="watch-info">
