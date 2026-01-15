@@ -102,6 +102,43 @@ function initializeDatabase() {
       UNIQUE(collection_id, media_id)
     );
 
+    -- Sessions table (track logged in devices)
+    CREATE TABLE IF NOT EXISTS sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      token TEXT UNIQUE NOT NULL,
+      device_name TEXT,
+      ip_address TEXT,
+      user_agent TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      last_active DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    -- Audit log table (track uploads and sensitive actions)
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      action TEXT NOT NULL,
+      resource_type TEXT,
+      resource_id INTEGER,
+      ip_address TEXT,
+      user_agent TEXT,
+      details TEXT,
+      success BOOLEAN DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+
+    -- Rate limiting table
+    CREATE TABLE IF NOT EXISTS rate_limits (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      key TEXT NOT NULL,
+      attempts INTEGER DEFAULT 1,
+      reset_at DATETIME NOT NULL,
+      UNIQUE(key)
+    );
+
     -- Indexes for performance
     CREATE INDEX IF NOT EXISTS idx_media_type ON media(type);
     CREATE INDEX IF NOT EXISTS idx_media_year ON media(year);
@@ -109,6 +146,11 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_watch_history_profile ON watch_history(profile_id);
     CREATE INDEX IF NOT EXISTS idx_watch_history_last_watched ON watch_history(last_watched);
     CREATE INDEX IF NOT EXISTS idx_my_list_profile ON my_list(profile_id);
+    CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
+    CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_id);
+    CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at);
+    CREATE INDEX IF NOT EXISTS idx_rate_limits_key ON rate_limits(key);
   `);
 
   console.log('Database initialized successfully');

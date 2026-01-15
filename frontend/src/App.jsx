@@ -9,6 +9,7 @@ import MyList from './pages/MyList';
 import Upload from './pages/Upload';
 import Watch from './pages/Watch';
 import ProfileSelect from './pages/ProfileSelect';
+import Settings from './pages/Settings';
 import Navbar from './components/Navbar';
 import './App.css';
 
@@ -60,6 +61,7 @@ function AppRoutes() {
         <Route path="/movies" element={<ProtectedRoute><Browse type="movie" /></ProtectedRoute>} />
         <Route path="/series" element={<ProtectedRoute><Browse type="series" /></ProtectedRoute>} />
         <Route path="/my-list" element={<ProtectedRoute><MyList /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/watch/:id" element={<ProtectedRoute><Watch /></ProtectedRoute>} />
         <Route path="/upload" element={<ProtectedRoute><AdminRoute><Upload /></AdminRoute></ProtectedRoute>} />
       </Routes>

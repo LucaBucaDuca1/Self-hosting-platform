@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const db = require('../config/database');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const { requireLAN, rateLimit, auditLog } = require('../middleware/security');
 const { extractMetadata, isVideoFile } = require('../utils/fileUtils');
 
 const router = express.Router();
@@ -20,22 +21,48 @@ const storage = multer.diskStorage({
   }
 });
 
+// Allowed video MIME types
+const ALLOWED_VIDEO_TYPES = [
+  'video/mp4',
+  'video/x-matroska',
+  'video/avi',
+  'video/quicktime',
+  'video/x-msvideo',
+  'video/x-ms-wmv',
+  'video/webm',
+  'video/x-m4v'
+];
+
 const upload = multer({
   storage,
   limits: {
     fileSize: parseInt(process.env.MAX_FILE_SIZE || '10737418240') // 10GB default
   },
   fileFilter: (req, file, cb) => {
-    if (isVideoFile(file.originalname)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only video files allowed'));
+    // Check file extension
+    if (!isVideoFile(file.originalname)) {
+      return cb(new Error('Only video files are allowed'));
     }
+
+    // Check MIME type
+    if (!ALLOWED_VIDEO_TYPES.includes(file.mimetype)) {
+      return cb(new Error('Invalid video file type'));
+    }
+
+    cb(null, true);
   }
 });
 
-// Upload video (admin only)
-router.post('/upload', authenticate, requireAdmin, upload.single('video'), async (req, res) => {
+// Upload video (admin only, LAN only, rate limited)
+router.post(
+  '/upload',
+  authenticate,
+  requireAdmin,
+  requireLAN,
+  rateLimit({ max: 10, windowMs: 60 * 60 * 1000 }), // 10 uploads per hour
+  auditLog('video_upload', 'media'),
+  upload.single('video'),
+  async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -76,8 +103,15 @@ router.post('/upload', authenticate, requireAdmin, upload.single('video'), async
   }
 });
 
-// Upload poster/background (admin only)
-router.post('/upload-image', authenticate, requireAdmin, multer({
+// Upload poster/background (admin only, LAN only)
+router.post(
+  '/upload-image',
+  authenticate,
+  requireAdmin,
+  requireLAN,
+  rateLimit({ max: 20, windowMs: 60 * 60 * 1000 }), // 20 images per hour
+  auditLog('image_upload', 'media'),
+  multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
       const type = req.query.type || 'poster';

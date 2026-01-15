@@ -22,7 +22,10 @@ export const auth = {
   login: (data) => api.post('/auth/login', data),
   getMe: () => api.get('/auth/me'),
   getProfiles: () => api.get('/auth/profiles'),
-  createProfile: (data) => api.post('/auth/profiles', data)
+  createProfile: (data) => api.post('/auth/profiles', data),
+  getSessions: () => api.get('/auth/sessions'),
+  logoutDevice: (sessionId) => api.delete(`/auth/sessions/${sessionId}`),
+  logoutAll: () => api.post('/auth/logout-all')
 };
 
 // Media endpoints

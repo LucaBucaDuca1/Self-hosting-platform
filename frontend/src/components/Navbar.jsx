@@ -75,6 +75,9 @@ const Navbar = () => {
                 <Link to="/profiles" onClick={() => setShowProfileMenu(false)}>
                   Switch Profile
                 </Link>
+                <Link to="/settings" onClick={() => setShowProfileMenu(false)}>
+                  Settings
+                </Link>
                 <button onClick={handleLogout}>
                   Sign Out
                 </button>
