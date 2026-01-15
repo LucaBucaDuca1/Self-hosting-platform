@@ -14,9 +14,33 @@ const MediaCard = ({ media, inList, onListUpdate, onDelete, style, progress }) =
   const posterUrl = getPosterUrl(media.poster_path);
   const placeholderUrl = `https://via.placeholder.com/300x450/141414/e50914?text=${encodeURIComponent(media.title)}`;
 
-  const handlePlay = (e) => {
+  const handlePlay = async (e) => {
     e.stopPropagation();
-    navigate(`/watch/${media.id}`);
+
+    // If this is a series, navigate to the first episode instead
+    if (media.type === 'series') {
+      try {
+        const seriesResponse = await mediaApi.getById(media.id);
+        const episodes = seriesResponse.data.episodes || [];
+
+        if (episodes.length > 0) {
+          // Sort by season and episode to get the first one
+          const sortedEpisodes = episodes.sort((a, b) => {
+            if (a.season !== b.season) return a.season - b.season;
+            return a.episode - b.episode;
+          });
+          navigate(`/watch/${sortedEpisodes[0].id}`);
+        } else {
+          alert('No episodes found for this series');
+        }
+      } catch (error) {
+        console.error('Failed to load series episodes:', error);
+        alert('Failed to load series');
+      }
+    } else {
+      // For movies and episodes, navigate directly
+      navigate(`/watch/${media.id}`);
+    }
   };
 
   const toggleMyList = async (e) => {

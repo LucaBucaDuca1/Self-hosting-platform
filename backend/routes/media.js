@@ -255,8 +255,15 @@ router.get('/', authenticate, (req, res) => {
     const params = [];
 
     if (type && type !== 'all') {
-      query += ' AND type = ?';
-      params.push(type);
+      // Special handling for TV show browsing
+      if (type === 'episode') {
+        // When browsing TV shows, show series (not individual episodes)
+        query += ' AND type = ?';
+        params.push('series');
+      } else {
+        query += ' AND type = ?';
+        params.push(type);
+      }
     } else {
       // When no specific type is requested, exclude 'series' placeholders
       // Only show playable content (movies and episodes)
@@ -310,8 +317,14 @@ router.get('/', authenticate, (req, res) => {
     const countParams = [];
 
     if (type && type !== 'all') {
-      countQuery += ' AND type = ?';
-      countParams.push(type);
+      // Special handling for TV show browsing
+      if (type === 'episode') {
+        countQuery += ' AND type = ?';
+        countParams.push('series');
+      } else {
+        countQuery += ' AND type = ?';
+        countParams.push(type);
+      }
     } else {
       // Exclude series placeholders from count too
       countQuery += ' AND type != ?';

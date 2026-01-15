@@ -116,6 +116,8 @@ const Upload = () => {
     e.preventDefault();
     if (e.target.files && e.target.files.length > 0) {
       handleFiles(e.target.files);
+      // Reset the input value so the same files can be selected again
+      e.target.value = '';
     }
   };
 
