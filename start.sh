@@ -155,11 +155,31 @@ fi
 
 echo -e "${GREEN}✓ All checks passed!${NC}"
 echo ""
+
+# Get local network IP
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    LOCAL_IP=$(ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -n1)
+else
+    # Linux
+    LOCAL_IP=$(hostname -I | awk '{print $1}')
+fi
+
+# If we couldn't get IP, use localhost
+if [ -z "$LOCAL_IP" ]; then
+    LOCAL_IP="localhost"
+fi
+
 echo -e "${BLUE}Starting servers...${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo -e "${GREEN}Backend will start on: http://localhost:5000${NC}"
-echo -e "${GREEN}Frontend will start on: http://localhost:5173${NC}"
+echo -e "${GREEN}Access on this computer:${NC}"
+echo -e "  Frontend: http://localhost:5173"
+echo -e "  Backend:  http://localhost:5000"
+echo ""
+echo -e "${GREEN}Access from other devices:${NC}"
+echo -e "  Frontend: ${BLUE}http://${LOCAL_IP}:5173${NC}"
+echo -e "  Backend:  http://${LOCAL_IP}:5000"
 echo ""
 echo -e "${YELLOW}Press Ctrl+C to stop both servers${NC}"
 echo ""

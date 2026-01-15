@@ -155,12 +155,26 @@ echo [OK] Port 5000 is available
 echo.
 echo [OK] All checks passed!
 echo.
+
+REM Get local network IP
+for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4 Address"') do (
+    set "LOCAL_IP=%%a"
+    goto :got_ip
+)
+:got_ip
+set LOCAL_IP=%LOCAL_IP:~1%
+
 echo ================================================
 echo Starting servers...
 echo ================================================
 echo.
-echo Backend will start on: http://localhost:5000
-echo Frontend will start on: http://localhost:5173
+echo Access on this computer:
+echo   Frontend: http://localhost:5173
+echo   Backend:  http://localhost:5000
+echo.
+echo Access from other devices:
+echo   Frontend: http://%LOCAL_IP%:5173
+echo   Backend:  http://%LOCAL_IP%:5000
 echo.
 echo Press Ctrl+C to stop both servers
 echo.

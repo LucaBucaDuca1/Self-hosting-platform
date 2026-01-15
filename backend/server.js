@@ -8,7 +8,21 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173'],
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // Check if origin is from allowed origins or local network
+    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
+    const isLocalhost = origin.match(/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)/);
+    const isLocalNetwork = origin.match(/^https?:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)/);
+
+    if (allowedOrigins.includes(origin) || isLocalhost || isLocalNetwork) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
@@ -42,13 +56,30 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
+  const os = require('os');
+  const networkInterfaces = os.networkInterfaces();
+  let localIP = 'localhost';
+
+  // Find local network IP
+  for (const name of Object.keys(networkInterfaces)) {
+    for (const iface of networkInterfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        localIP = iface.address;
+        break;
+      }
+    }
+  }
+
   console.log(`
 ╔════════════════════════════════════════════════╗
 ║                                                ║
 ║       🎬 Zeloz Streaming Platform 🎬          ║
 ║                                                ║
-║  Server running on http://localhost:${PORT}     ║
+║  Server running on:                           ║
+║  • Local:   http://localhost:${PORT}          ║
+║  • Network: http://${localIP}:${PORT}         ║
+║                                                ║
 ║  Made with ♥ by Zeloz                         ║
 ║                                                ║
 ╚════════════════════════════════════════════════╝
