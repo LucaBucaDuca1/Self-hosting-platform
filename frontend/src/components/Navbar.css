@@ -16,9 +16,10 @@
 }
 
 .navbar-container {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
+  gap: 30px;
   padding: 20px 60px;
   max-width: 100%;
 }
@@ -27,6 +28,13 @@
   display: flex;
   align-items: center;
   gap: 40px;
+}
+
+.navbar-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
 }
 
 .navbar-logo {
@@ -187,13 +195,21 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
+@media (max-width: 1024px) {
+  .navbar-center {
+    max-width: 400px;
+  }
+}
+
 @media (max-width: 768px) {
   .navbar-container {
-    padding: 15px 30px;
+    padding: 15px 20px;
+    grid-template-columns: 1fr auto;
+    gap: 15px;
   }
 
   .navbar-left {
-    gap: 20px;
+    gap: 15px;
   }
 
   .navbar-logo {
@@ -201,11 +217,11 @@
   }
 
   .navbar-links {
-    gap: 15px;
+    display: none;
   }
 
-  .navbar-links a {
-    font-size: 0.85rem;
+  .navbar-center {
+    display: none;
   }
 
   .profile-name {

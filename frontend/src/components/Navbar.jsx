@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import SearchBar from './SearchBar';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -53,6 +54,10 @@ const Navbar = () => {
               </Link>
             )}
           </div>
+        </div>
+
+        <div className="navbar-center">
+          <SearchBar />
         </div>
 
         <div className="navbar-right">
