@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import KeyboardShortcuts from './KeyboardShortcuts';
 import './VideoPlayer.css';
 
 const VideoPlayer = ({
@@ -25,6 +26,7 @@ const VideoPlayer = ({
   const [showSettings, setShowSettings] = useState(false);
   const [buffering, setBuffering] = useState(false);
   const [currentSubtitle, setCurrentSubtitle] = useState('off');
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   const controlsTimeoutRef = useRef(null);
   const containerRef = useRef(null);
@@ -33,6 +35,24 @@ const VideoPlayer = ({
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      // Handle "?" key for shortcuts
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        setShowShortcuts(true);
+        return;
+      }
+
+      // Handle Escape key
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (showShortcuts) {
+          setShowShortcuts(false);
+        } else if (isFullscreen) {
+          toggleFullscreen();
+        }
+        return;
+      }
 
       switch (e.key.toLowerCase()) {
         case ' ':
@@ -459,9 +479,12 @@ const VideoPlayer = ({
       {/* Keyboard Shortcuts Hint */}
       {!playing && (
         <div className="keyboard-hints">
-          <p>Space: Play/Pause • ← →: Skip 10s • ↑ ↓: Volume • F: Fullscreen • M: Mute</p>
+          <p>Space: Play/Pause • ← →: Skip 10s • ↑ ↓: Volume • F: Fullscreen • M: Mute • ?: Shortcuts</p>
         </div>
       )}
+
+      {/* Keyboard Shortcuts Overlay */}
+      {showShortcuts && <KeyboardShortcuts onClose={() => setShowShortcuts(false)} />}
     </div>
   );
 };
