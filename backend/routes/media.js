@@ -257,6 +257,11 @@ router.get('/', authenticate, (req, res) => {
     if (type && type !== 'all') {
       query += ' AND type = ?';
       params.push(type);
+    } else {
+      // When no specific type is requested, exclude 'series' placeholders
+      // Only show playable content (movies and episodes)
+      query += ' AND type != ?';
+      params.push('series');
     }
 
     if (genre && genre !== 'all') {
@@ -307,6 +312,10 @@ router.get('/', authenticate, (req, res) => {
     if (type && type !== 'all') {
       countQuery += ' AND type = ?';
       countParams.push(type);
+    } else {
+      // Exclude series placeholders from count too
+      countQuery += ' AND type != ?';
+      countParams.push('series');
     }
 
     if (genre && genre !== 'all') {
@@ -462,6 +471,7 @@ router.get('/featured/recent', authenticate, (req, res) => {
   try {
     const media = db.prepare(`
       SELECT * FROM media
+      WHERE type != 'series'
       ORDER BY created_at DESC
       LIMIT 20
     `).all();
@@ -480,6 +490,7 @@ router.get('/featured/trending', authenticate, (req, res) => {
       FROM media m
       LEFT JOIN watch_history wh ON m.id = wh.media_id
       WHERE wh.last_watched > datetime('now', '-7 days')
+        AND m.type != 'series'
       GROUP BY m.id
       ORDER BY watch_count DESC
       LIMIT 20
@@ -513,6 +524,7 @@ router.get('/recommended/:profileId', authenticate, (req, res) => {
         FROM media m
         LEFT JOIN watch_history wh ON m.id = wh.media_id
         WHERE wh.last_watched > datetime('now', '-30 days')
+          AND m.type != 'series'
         GROUP BY m.id
         ORDER BY COUNT(wh.id) DESC
         LIMIT 20
@@ -564,6 +576,7 @@ router.get('/recommended/:profileId', authenticate, (req, res) => {
           (SELECT COUNT(*) FROM watch_history WHERE media_id = m.id) as popularity
         FROM media m
         WHERE (${genreConditions})
+          AND m.type != 'series'
           ${watchedIds.length > 0 ? `AND m.id NOT IN (${watchedIds.join(',')})` : ''}
         ORDER BY popularity DESC, m.created_at DESC
         LIMIT 15
@@ -579,6 +592,7 @@ router.get('/recommended/:profileId', authenticate, (req, res) => {
           (SELECT COUNT(*) FROM watch_history WHERE media_id = m.id) as popularity
         FROM media m
         WHERE m.type = ?
+          AND m.type != 'series'
           ${watchedIds.length > 0 ? `AND m.id NOT IN (${watchedIds.join(',')})` : ''}
           AND m.id NOT IN (${recommendations.map(r => r.id).join(',') || '0'})
         ORDER BY popularity DESC, m.created_at DESC
@@ -594,6 +608,7 @@ router.get('/recommended/:profileId', authenticate, (req, res) => {
         SELECT m.*
         FROM media m
         WHERE ${watchedIds.length > 0 ? `m.id NOT IN (${watchedIds.join(',')})` : '1=1'}
+          AND m.type != 'series'
           AND m.id NOT IN (${recommendations.map(r => r.id).join(',') || '0'})
         ORDER BY m.created_at DESC
         LIMIT ${20 - recommendations.length}

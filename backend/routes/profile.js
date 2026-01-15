@@ -12,6 +12,7 @@ router.get('/:profileId/continue-watching', authenticate, (req, res) => {
       FROM watch_history wh
       JOIN media m ON wh.media_id = m.id
       WHERE wh.profile_id = ? AND wh.completed = 0 AND wh.progress > 0
+        AND m.type != 'series'
       ORDER BY wh.last_watched DESC
       LIMIT 20
     `).all(req.params.profileId);
@@ -30,6 +31,7 @@ router.get('/:profileId/my-list', authenticate, (req, res) => {
       FROM my_list ml
       JOIN media m ON ml.media_id = m.id
       WHERE ml.profile_id = ?
+        AND m.type != 'series'
       ORDER BY ml.added_at DESC
     `).all(req.params.profileId);
 
