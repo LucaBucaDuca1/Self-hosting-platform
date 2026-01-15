@@ -1,0 +1,61 @@
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: '/api',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Add token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Auth endpoints
+export const auth = {
+  register: (data) => api.post('/auth/register', data),
+  login: (data) => api.post('/auth/login', data),
+  getMe: () => api.get('/auth/me'),
+  getProfiles: () => api.get('/auth/profiles'),
+  createProfile: (data) => api.post('/auth/profiles', data)
+};
+
+// Media endpoints
+export const media = {
+  getAll: (params) => api.get('/media', { params }),
+  getById: (id) => api.get(`/media/${id}`),
+  upload: (formData, onProgress) => api.post('/media/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress: onProgress
+  }),
+  uploadImage: (formData, type) => api.post(`/media/upload-image?type=${type}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  update: (id, data) => api.put(`/media/${id}`, data),
+  delete: (id) => api.delete(`/media/${id}`),
+  getRecent: () => api.get('/media/featured/recent'),
+  getTrending: () => api.get('/media/featured/trending')
+};
+
+// Profile endpoints
+export const profile = {
+  getContinueWatching: (profileId) => api.get(`/profile/${profileId}/continue-watching`),
+  getMyList: (profileId) => api.get(`/profile/${profileId}/my-list`),
+  addToMyList: (profileId, mediaId) => api.post(`/profile/${profileId}/my-list/${mediaId}`),
+  removeFromMyList: (profileId, mediaId) => api.delete(`/profile/${profileId}/my-list/${mediaId}`),
+  checkInMyList: (profileId, mediaId) => api.get(`/profile/${profileId}/my-list/${mediaId}/check`),
+  updateWatchProgress: (profileId, mediaId, data) => api.post(`/profile/${profileId}/watch-progress/${mediaId}`, data),
+  getWatchProgress: (profileId, mediaId) => api.get(`/profile/${profileId}/watch-progress/${mediaId}`)
+};
+
+// Stream endpoints
+export const getStreamUrl = (mediaId) => `/api/stream/video/${mediaId}`;
+export const getPosterUrl = (filename) => filename ? `/api/stream/poster/${filename}` : null;
+export const getBackgroundUrl = (filename) => filename ? `/api/stream/background/${filename}` : null;
+
+export default api;

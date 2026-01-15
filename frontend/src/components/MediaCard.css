@@ -1,0 +1,144 @@
+.media-card {
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.3s, z-index 0s 0.3s;
+  background: var(--darker);
+}
+
+.media-card:hover {
+  transform: scale(1.05);
+  z-index: 10;
+  transition: transform 0.3s, z-index 0s 0s;
+}
+
+.media-poster {
+  width: 100%;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  display: block;
+}
+
+.media-title {
+  padding: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.media-details {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.95) 100%);
+  padding: 60px 15px 15px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.media-card:hover .media-details {
+  opacity: 1;
+}
+
+.media-details h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.media-year {
+  font-size: 0.85rem;
+  color: var(--light-gray);
+  margin-bottom: 5px;
+}
+
+.media-genres {
+  font-size: 0.8rem;
+  color: var(--gray);
+  margin-bottom: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.media-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.btn-play {
+  flex: 1;
+  background: var(--white);
+  color: var(--dark);
+  padding: 8px 15px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: background 0.3s;
+}
+
+.btn-play:hover {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.btn-play svg {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(42, 42, 42, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.btn-icon:hover {
+  border-color: var(--white);
+  background: rgba(42, 42, 42, 0.9);
+}
+
+.btn-icon.active {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.btn-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+@media (max-width: 768px) {
+  .media-card:hover {
+    transform: scale(1.02);
+  }
+
+  .media-details h3 {
+    font-size: 1rem;
+  }
+
+  .btn-play {
+    font-size: 0.85rem;
+    padding: 6px 12px;
+  }
+
+  .btn-icon {
+    width: 32px;
+    height: 32px;
+  }
+}

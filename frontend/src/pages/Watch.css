@@ -1,0 +1,99 @@
+.watch-page {
+  min-height: 100vh;
+  background: var(--darker);
+  padding-top: 70px;
+}
+
+.back-button {
+  position: fixed;
+  top: 90px;
+  left: 60px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(0, 0, 0, 0.7);
+  color: var(--white);
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background 0.3s;
+}
+
+.back-button:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.back-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+.video-container {
+  width: 100%;
+  max-width: 100%;
+  background: #000;
+}
+
+.video-player {
+  width: 100%;
+  max-height: calc(100vh - 70px);
+  display: block;
+}
+
+.watch-info {
+  padding: 40px 60px;
+  max-width: 1200px;
+}
+
+.watch-info h1 {
+  font-size: 2.5rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+.watch-year {
+  font-size: 1.1rem;
+  color: var(--light-gray);
+  margin-bottom: 10px;
+}
+
+.watch-episode {
+  font-size: 1rem;
+  color: var(--light-gray);
+  margin-bottom: 20px;
+}
+
+.watch-description {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: var(--light-gray);
+  margin-bottom: 20px;
+}
+
+.watch-genres {
+  font-size: 0.95rem;
+  color: var(--gray);
+}
+
+@media (max-width: 768px) {
+  .back-button {
+    top: 80px;
+    left: 20px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+
+  .watch-info {
+    padding: 30px;
+  }
+
+  .watch-info h1 {
+    font-size: 1.8rem;
+  }
+
+  .watch-description {
+    font-size: 1rem;
+  }
+}

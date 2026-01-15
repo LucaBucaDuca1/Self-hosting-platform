@@ -1,0 +1,21 @@
+.empty-state {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+}
+
+.empty-state h2 {
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+  color: var(--primary);
+}
+
+.empty-state p {
+  font-size: 1.2rem;
+  color: var(--light-gray);
+  margin-bottom: 10px;
+}
