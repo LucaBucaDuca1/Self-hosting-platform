@@ -68,33 +68,73 @@ router.post(
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const { title, type, year, description, genres, season, episode, seriesId } = req.body;
+    const { title, type, year, description, genres, season, episode, seriesId, seriesTitle } = req.body;
 
     // Auto-extract metadata from filename if not provided
     const metadata = extractMetadata(req.file.originalname);
 
+    let finalSeriesId = seriesId;
+    let finalType = type || (metadata.season ? 'episode' : 'movie');
+    let episodeTitle = title || metadata.title;
+
+    // If this is an episode, handle series creation/lookup
+    if (finalType === 'episode' && !finalSeriesId) {
+      const showTitle = seriesTitle || episodeTitle; // Use seriesTitle if provided, otherwise use episode title
+
+      // Check if series already exists
+      const existingSeries = db.prepare(`
+        SELECT id FROM media
+        WHERE title = ? AND type = 'series'
+        LIMIT 1
+      `).get(showTitle);
+
+      if (existingSeries) {
+        finalSeriesId = existingSeries.id;
+      } else {
+        // Create new series entry
+        const seriesResult = db.prepare(`
+          INSERT INTO media (
+            title, type, year, description, genres,
+            file_path, uploaded_by
+          ) VALUES (?, 'series', ?, ?, ?, 'series-placeholder', ?)
+        `).run(
+          showTitle,
+          year || metadata.year,
+          description || null,
+          genres || null,
+          req.user.id
+        );
+        finalSeriesId = seriesResult.lastInsertRowid;
+      }
+
+      // For episodes, keep the full title (e.g., "Breaking Bad S01E01")
+      // Series title is already stored in the series entry
+    }
+
+    // Insert the actual media (episode or movie)
     const result = db.prepare(`
       INSERT INTO media (
         title, type, year, description, genres,
         file_path, season, episode, series_id, uploaded_by
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      title || metadata.title,
-      type || (metadata.season ? 'episode' : 'movie'),
+      episodeTitle,
+      finalType,
       year || metadata.year,
       description || null,
       genres || null,
       req.file.filename,
       season || metadata.season,
       episode || metadata.episode,
-      seriesId || null,
+      finalSeriesId || null,
       req.user.id
     );
 
     res.json({
       id: result.lastInsertRowid,
-      title: title || metadata.title,
-      type: type || (metadata.season ? 'episode' : 'movie'),
+      title: episodeTitle,
+      type: finalType,
+      series_id: finalSeriesId,
       filename: req.file.filename
     });
   } catch (error) {

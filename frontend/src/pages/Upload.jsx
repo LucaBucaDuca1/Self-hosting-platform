@@ -17,6 +17,7 @@ const Upload = () => {
 
   const [batchSettings, setBatchSettings] = useState({
     type: 'episode',
+    seriesTitle: '',
     year: new Date().getFullYear(),
     genres: '',
     description: ''
@@ -127,6 +128,8 @@ const Upload = () => {
         file,
         filename: file.name,
         ...metadata,
+        type: metadata.type || batchSettings.type,
+        seriesTitle: batchSettings.seriesTitle || metadata.title,
         year: metadata.year || batchSettings.year,
         genres: batchSettings.genres,
         description: batchSettings.description,
@@ -157,6 +160,7 @@ const Upload = () => {
       data.append('video', queueItem.file);
       data.append('title', queueItem.title);
       data.append('type', queueItem.type);
+      if (queueItem.seriesTitle) data.append('seriesTitle', queueItem.seriesTitle);
       if (queueItem.year) data.append('year', queueItem.year);
       if (queueItem.season) data.append('season', queueItem.season);
       if (queueItem.episode) data.append('episode', queueItem.episode);
@@ -277,6 +281,22 @@ const Upload = () => {
               <option value="episode">TV Episode</option>
             </select>
           </div>
+
+          {batchSettings.type === 'episode' && (
+            <div className="form-group">
+              <label>Series/Show Title <span style={{ color: 'var(--primary)' }}>*</span></label>
+              <input
+                type="text"
+                value={batchSettings.seriesTitle}
+                onChange={(e) => setBatchSettings({ ...batchSettings, seriesTitle: e.target.value })}
+                placeholder="e.g., Breaking Bad"
+                className="form-input"
+              />
+              <small style={{ color: 'var(--gray)', fontSize: '0.85rem', marginTop: '5px', display: 'block' }}>
+                All episodes will be grouped under this show
+              </small>
+            </div>
+          )}
 
           <div className="form-group">
             <label>Default Year</label>

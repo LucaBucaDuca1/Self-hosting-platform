@@ -423,7 +423,7 @@ const VideoPlayer = ({
                         onClick={() => handlePlaybackRate(rate)}
                         className={playbackRate === rate ? 'active' : ''}
                       >
-                        {rate}x {playbackRate === rate && '✓'}
+                        {rate}x
                       </button>
                     ))}
                   </div>
@@ -435,7 +435,7 @@ const VideoPlayer = ({
                         onClick={() => setQuality(q)}
                         className={quality === q ? 'active' : ''}
                       >
-                        {q.toUpperCase()} {quality === q && '✓'}
+                        {q.toUpperCase()}
                       </button>
                     ))}
                   </div>
@@ -445,7 +445,7 @@ const VideoPlayer = ({
                       onClick={() => handleSubtitleChange('off')}
                       className={currentSubtitle === 'off' ? 'active' : ''}
                     >
-                      Off {currentSubtitle === 'off' && '✓'}
+                      Off
                     </button>
                     {subtitles && subtitles.map((subtitle, index) => (
                       <button
@@ -453,7 +453,7 @@ const VideoPlayer = ({
                         onClick={() => handleSubtitleChange(index)}
                         className={currentSubtitle === index ? 'active' : ''}
                       >
-                        {subtitle.label} {currentSubtitle === index && '✓'}
+                        {subtitle.label}
                       </button>
                     ))}
                   </div>
