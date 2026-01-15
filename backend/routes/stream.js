@@ -32,7 +32,7 @@ const authenticateStream = (req, res, next) => {
   }
 };
 
-// Stream video with range support
+// Stream video with range support and optimizations
 router.get('/video/:id', authenticateStream, (req, res) => {
   try {
     const media = db.prepare('SELECT file_path FROM media WHERE id = ?').get(req.params.id);
@@ -51,36 +51,79 @@ router.get('/video/:id', authenticateStream, (req, res) => {
     const fileSize = stat.size;
     const range = req.headers.range;
 
+    // Optimal chunk size for local network streaming (2MB)
+    const CHUNK_SIZE = 2 * 1024 * 1024;
+
     if (range) {
       // Parse range header
       const parts = range.replace(/bytes=/, '').split('-');
       const start = parseInt(parts[0], 10);
-      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+      // If no end specified, use optimal chunk size
+      let end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + CHUNK_SIZE - 1, fileSize - 1);
+
+      // Ensure we don't exceed file size
+      end = Math.min(end, fileSize - 1);
+
       const chunksize = (end - start) + 1;
 
-      const file = fs.createReadStream(videoPath, { start, end });
+      const file = fs.createReadStream(videoPath, {
+        start,
+        end,
+        highWaterMark: 64 * 1024 // 64KB buffer for smooth streaming
+      });
+
       const head = {
         'Content-Range': `bytes ${start}-${end}/${fileSize}`,
         'Accept-Ranges': 'bytes',
         'Content-Length': chunksize,
-        'Content-Type': 'video/mp4'
+        'Content-Type': 'video/mp4',
+        'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
+        'Connection': 'keep-alive',
+        'X-Content-Type-Options': 'nosniff'
       };
 
       res.writeHead(206, head);
+
+      // Handle stream errors
+      file.on('error', (err) => {
+        console.error('File stream error:', err);
+        if (!res.headersSent) {
+          res.status(500).end();
+        }
+      });
+
       file.pipe(res);
     } else {
-      // No range, send entire file
+      // No range, send entire file (for downloads or non-range browsers)
       const head = {
         'Content-Length': fileSize,
-        'Content-Type': 'video/mp4'
+        'Content-Type': 'video/mp4',
+        'Accept-Ranges': 'bytes',
+        'Cache-Control': 'public, max-age=31536000',
+        'Connection': 'keep-alive'
       };
 
       res.writeHead(200, head);
-      fs.createReadStream(videoPath).pipe(res);
+
+      const stream = fs.createReadStream(videoPath, {
+        highWaterMark: 64 * 1024 // 64KB buffer
+      });
+
+      stream.on('error', (err) => {
+        console.error('File stream error:', err);
+        if (!res.headersSent) {
+          res.status(500).end();
+        }
+      });
+
+      stream.pipe(res);
     }
   } catch (error) {
     console.error('Stream error:', error);
-    res.status(500).json({ error: 'Streaming failed' });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Streaming failed' });
+    }
   }
 });
 

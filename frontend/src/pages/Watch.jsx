@@ -127,6 +127,9 @@ const Watch = () => {
           ref={videoRef}
           controls
           autoPlay
+          preload="auto"
+          playsInline
+          crossOrigin="anonymous"
           onTimeUpdate={handleTimeUpdate}
           onPause={handlePause}
           onEnded={handleEnded}

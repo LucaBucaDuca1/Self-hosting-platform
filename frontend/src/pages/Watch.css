@@ -34,12 +34,30 @@
   width: 100%;
   max-width: 100%;
   background: #000;
+  position: relative;
+  overflow: hidden;
 }
 
 .video-player {
   width: 100%;
   max-height: calc(100vh - 70px);
   display: block;
+  object-fit: contain;
+
+  /* Enable hardware acceleration for smooth playback */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+
+  /* Optimize rendering */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
+
+  /* Smooth video transitions */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 .watch-info {
