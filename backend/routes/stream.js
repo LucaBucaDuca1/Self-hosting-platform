@@ -1,13 +1,39 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 const db = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
+
+// Middleware to authenticate via query param or header
+const authenticateStream = (req, res, next) => {
+  try {
+    // Try to get token from query parameter first (for video tag)
+    let token = req.query.token;
+
+    // If not in query, try Authorization header
+    if (!token) {
+      token = req.headers.authorization?.split(' ')[1];
+    }
+
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
 // Stream video with range support
-router.get('/video/:id', authenticate, (req, res) => {
+router.get('/video/:id', authenticateStream, (req, res) => {
   try {
     const media = db.prepare('SELECT file_path FROM media WHERE id = ?').get(req.params.id);
 

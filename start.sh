@@ -10,14 +10,25 @@ echo ""
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" &> /dev/null
+}
+
 # Check if Node.js is installed
-if ! command -v node &> /dev/null; then
+if ! command_exists node; then
     echo -e "${RED}✗ Node.js is not installed!${NC}"
     echo ""
     echo "Please install Node.js from https://nodejs.org/"
     echo "Recommended version: 16.x or higher"
+    echo ""
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "On macOS, you can install it with:"
+        echo "  brew install node"
+    fi
     echo ""
     read -p "Press Enter to exit..."
     exit 1
@@ -27,7 +38,7 @@ NODE_VERSION=$(node -v)
 echo -e "${GREEN}✓ Node.js ${NODE_VERSION} detected${NC}"
 
 # Check if npm is installed
-if ! command -v npm &> /dev/null; then
+if ! command_exists npm; then
     echo -e "${RED}✗ npm is not installed!${NC}"
     echo ""
     echo "Please install npm (comes with Node.js)"
@@ -40,36 +51,64 @@ NPM_VERSION=$(npm -v)
 echo -e "${GREEN}✓ npm ${NPM_VERSION} detected${NC}"
 echo ""
 
-# Check if dependencies are installed
-if [ ! -d "node_modules" ] || [ ! -d "backend/node_modules" ] || [ ! -d "frontend/node_modules" ]; then
+# Check if dependencies need to be installed
+NEED_INSTALL=0
+
+if [ ! -d "node_modules" ]; then
+    echo -e "${BLUE}ℹ Root dependencies not found${NC}"
+    NEED_INSTALL=1
+fi
+
+if [ ! -d "backend/node_modules" ]; then
+    echo -e "${BLUE}ℹ Backend dependencies not found${NC}"
+    NEED_INSTALL=1
+fi
+
+if [ ! -d "frontend/node_modules" ]; then
+    echo -e "${BLUE}ℹ Frontend dependencies not found${NC}"
+    NEED_INSTALL=1
+fi
+
+if [ $NEED_INSTALL -eq 1 ]; then
+    echo ""
     echo -e "${YELLOW}⚙ Installing dependencies...${NC}"
-    echo "This may take a few minutes on first run..."
+    echo -e "${BLUE}This may take 2-5 minutes on first run...${NC}"
     echo ""
 
-    npm install
+    echo -e "${BLUE}[1/3] Installing root dependencies...${NC}"
+    npm install --silent
     if [ $? -ne 0 ]; then
         echo -e "${RED}✗ Failed to install root dependencies${NC}"
+        echo "Try running: npm install"
         read -p "Press Enter to exit..."
         exit 1
     fi
+    echo -e "${GREEN}✓ Root dependencies installed${NC}"
 
-    cd backend && npm install
+    echo -e "${BLUE}[2/3] Installing backend dependencies...${NC}"
+    cd backend && npm install --silent
     if [ $? -ne 0 ]; then
         echo -e "${RED}✗ Failed to install backend dependencies${NC}"
+        echo "Try running: cd backend && npm install"
         read -p "Press Enter to exit..."
         exit 1
     fi
     cd ..
+    echo -e "${GREEN}✓ Backend dependencies installed${NC}"
 
-    cd frontend && npm install
+    echo -e "${BLUE}[3/3] Installing frontend dependencies...${NC}"
+    cd frontend && npm install --silent
     if [ $? -ne 0 ]; then
         echo -e "${RED}✗ Failed to install frontend dependencies${NC}"
+        echo "Try running: cd frontend && npm install"
         read -p "Press Enter to exit..."
         exit 1
     fi
     cd ..
+    echo -e "${GREEN}✓ Frontend dependencies installed${NC}"
 
-    echo -e "${GREEN}✓ Dependencies installed successfully${NC}"
+    echo ""
+    echo -e "${GREEN}✓ All dependencies installed successfully!${NC}"
     echo ""
 else
     echo -e "${GREEN}✓ Dependencies already installed${NC}"
@@ -82,34 +121,53 @@ if [ ! -f ".env" ]; then
     if [ -f ".env.example" ]; then
         cp .env.example .env
         echo -e "${GREEN}✓ .env file created${NC}"
-        echo -e "${YELLOW}⚠ Please update JWT_SECRET in .env for production!${NC}"
+        echo -e "${YELLOW}⚠ Remember to update JWT_SECRET in .env for production!${NC}"
         echo ""
     else
-        echo -e "${RED}✗ .env.example not found${NC}"
+        echo -e "${YELLOW}⚠ .env.example not found, creating default .env${NC}"
+        cat > .env << 'EOF'
+PORT=5000
+JWT_SECRET=change-this-to-a-random-string-in-production
+MAX_FILE_SIZE=10737418240
+EOF
+        echo -e "${GREEN}✓ Default .env file created${NC}"
+        echo ""
     fi
 fi
 
 # Check if port 5000 is available
-if lsof -Pi :5000 -sTCP:LISTEN -t >/dev/null 2>&1 ; then
-    echo -e "${RED}✗ Port 5000 is already in use!${NC}"
-    echo ""
-    echo "Please close the application using port 5000 or change PORT in .env"
-    echo ""
-    read -p "Press Enter to exit..."
-    exit 1
-fi
+if command_exists lsof; then
+    if lsof -Pi :5000 -sTCP:LISTEN -t >/dev/null 2>&1 ; then
+        echo -e "${RED}✗ Port 5000 is already in use!${NC}"
+        echo ""
+        echo "Please close the application using port 5000 or change PORT in .env"
+        echo ""
+        read -p "Press Enter to exit..."
+        exit 1
+    fi
 
-# Check if port 5173 is available (frontend dev server)
-if lsof -Pi :5173 -sTCP:LISTEN -t >/dev/null 2>&1 ; then
-    echo -e "${YELLOW}⚠ Port 5173 is already in use, frontend may not start${NC}"
-    echo ""
+    # Check if port 5173 is available (frontend dev server)
+    if lsof -Pi :5173 -sTCP:LISTEN -t >/dev/null 2>&1 ; then
+        echo -e "${YELLOW}⚠ Port 5173 is already in use, frontend may not start${NC}"
+        echo ""
+    fi
 fi
 
 echo -e "${GREEN}✓ All checks passed!${NC}"
 echo ""
-echo "Starting servers..."
+echo -e "${BLUE}Starting servers...${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
+echo -e "${GREEN}Backend will start on: http://localhost:5000${NC}"
+echo -e "${GREEN}Frontend will start on: http://localhost:5173${NC}"
+echo ""
+echo -e "${YELLOW}Press Ctrl+C to stop both servers${NC}"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Trap Ctrl+C to gracefully exit
+trap 'echo -e "\n${YELLOW}Shutting down servers...${NC}"; kill 0; exit' INT
 
 # Start the application
 npm run dev

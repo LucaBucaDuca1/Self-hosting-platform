@@ -70,7 +70,10 @@ export const collections = {
 };
 
 // Stream endpoints
-export const getStreamUrl = (mediaId) => `/api/stream/video/${mediaId}`;
+export const getStreamUrl = (mediaId) => {
+  const token = localStorage.getItem('token');
+  return `/api/stream/video/${mediaId}${token ? `?token=${token}` : ''}`;
+};
 export const getPosterUrl = (filename) => filename ? `/api/stream/poster/${filename}` : null;
 export const getBackgroundUrl = (filename) => filename ? `/api/stream/background/${filename}` : null;
 
