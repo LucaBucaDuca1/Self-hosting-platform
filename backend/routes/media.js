@@ -23,7 +23,12 @@ async function convertToMP4(inputPath, outputPath) {
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 
     // Add progress flag to ffmpeg command
-    const command = `ffmpeg -i "${inputPath}" -c:v libx264 -preset fast -crf 23 -c:a aac -b:a 128k -movflags +faststart -progress pipe:1 "${outputPath}" -y`;
+    // Audio settings for maximum iPhone compatibility:
+    // - aac codec with strict experimental for better compatibility
+    // - 48000 Hz sample rate (iPhone standard)
+    // - Stereo audio (2 channels)
+    // - 192k bitrate for good quality
+    const command = `ffmpeg -i "${inputPath}" -c:v libx264 -preset fast -crf 23 -c:a aac -strict experimental -ar 48000 -ac 2 -b:a 192k -movflags +faststart -progress pipe:1 "${outputPath}" -y`;
 
     const ffmpegProcess = exec(command, {
       maxBuffer: 1024 * 1024 * 10, // 10MB buffer
