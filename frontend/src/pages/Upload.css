@@ -311,6 +311,31 @@ textarea.form-input {
   border: 1px solid rgba(244, 67, 54, 0.4);
 }
 
+.status-badge.processing {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+}
+
+.spinner-small {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 193, 7, 0.3);
+  border-top-color: #ffc107;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Uploaded Content */
 .uploaded-content {
   margin-top: 50px;

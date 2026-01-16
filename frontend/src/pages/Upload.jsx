@@ -172,6 +172,11 @@ const Upload = () => {
       const response = await media.upload(data, (progressEvent) => {
         const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
         updateQueueItem(queueItem.id, { progress: percentCompleted });
+
+        // When upload reaches 100%, show converting status
+        if (percentCompleted === 100) {
+          updateQueueItem(queueItem.id, { status: 'converting' });
+        }
       });
 
       updateQueueItem(queueItem.id, { status: 'completed', progress: 100 });
@@ -423,6 +428,13 @@ const Upload = () => {
                     <div className="progress-bar">
                       <div className="progress-fill" style={{ width: `${item.progress}%` }}></div>
                       <span className="progress-text">{item.progress}%</span>
+                    </div>
+                  )}
+
+                  {item.status === 'converting' && (
+                    <div className="status-badge processing">
+                      <div className="spinner-small"></div>
+                      <span>Converting to MP4... (check server logs for progress)</span>
                     </div>
                   )}
 

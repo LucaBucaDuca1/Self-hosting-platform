@@ -14,22 +14,91 @@ const execPromise = util.promisify(exec);
 
 // Convert video to MP4 with H.264 codec for maximum compatibility
 async function convertToMP4(inputPath, outputPath) {
-  try {
-    // ffmpeg command to convert to MP4 with H.264 video and AAC audio
-    // -movflags +faststart makes it web-optimized (moov atom at beginning)
-    // -preset fast for good balance of speed/quality
-    // -crf 23 for good quality (lower = better quality, 18-28 is typical)
-    const command = `ffmpeg -i "${inputPath}" -c:v libx264 -preset fast -crf 23 -c:a aac -b:a 128k -movflags +faststart "${outputPath}" -y`;
+  return new Promise((resolve, reject) => {
+    const startTime = Date.now();
+    console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    console.log(`🎬 Starting video conversion to MP4`);
+    console.log(`📁 Input: ${path.basename(inputPath)}`);
+    console.log(`📁 Output: ${path.basename(outputPath)}`);
+    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 
-    console.log(`Converting video: ${path.basename(inputPath)} to MP4...`);
-    const { stdout, stderr } = await execPromise(command);
+    // Add progress flag to ffmpeg command
+    const command = `ffmpeg -i "${inputPath}" -c:v libx264 -preset fast -crf 23 -c:a aac -b:a 128k -movflags +faststart -progress pipe:1 "${outputPath}" -y`;
 
-    console.log(`Conversion complete: ${path.basename(outputPath)}`);
-    return true;
-  } catch (error) {
-    console.error('FFmpeg conversion error:', error);
-    throw new Error(`Video conversion failed: ${error.message}`);
-  }
+    const ffmpegProcess = exec(command, {
+      maxBuffer: 1024 * 1024 * 10, // 10MB buffer
+      timeout: 1800000 // 30 minute timeout
+    });
+
+    let lastProgress = '';
+    let duration = 0;
+    let currentTime = 0;
+
+    // Parse ffmpeg progress output
+    ffmpegProcess.stdout.on('data', (data) => {
+      const output = data.toString();
+
+      // Extract duration (total video length)
+      const durationMatch = output.match(/duration=(\d+)/);
+      if (durationMatch) {
+        duration = parseInt(durationMatch[1]);
+      }
+
+      // Extract current time (progress)
+      const timeMatch = output.match(/out_time_ms=(\d+)/);
+      if (timeMatch) {
+        currentTime = parseInt(timeMatch[1]) / 1000000; // Convert microseconds to seconds
+
+        if (duration > 0) {
+          const percent = Math.min(100, Math.round((currentTime / duration) * 100));
+          const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+          // Only log every 10% to avoid spam
+          if (percent % 10 === 0 && lastProgress !== `${percent}`) {
+            lastProgress = `${percent}`;
+            console.log(`⏳ Converting... ${percent}% complete (${elapsed}s elapsed)`);
+          }
+        }
+      }
+    });
+
+    ffmpegProcess.stderr.on('data', (data) => {
+      const output = data.toString();
+
+      // Extract duration from stderr if not found in stdout
+      if (!duration) {
+        const durationMatch = output.match(/Duration: (\d{2}):(\d{2}):(\d{2})/);
+        if (durationMatch) {
+          const hours = parseInt(durationMatch[1]);
+          const minutes = parseInt(durationMatch[2]);
+          const seconds = parseInt(durationMatch[3]);
+          duration = hours * 3600 + minutes * 60 + seconds;
+          console.log(`📊 Video duration: ${hours}h ${minutes}m ${seconds}s`);
+        }
+      }
+    });
+
+    ffmpegProcess.on('close', (code) => {
+      const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+
+      if (code === 0) {
+        console.log(`\n✅ Conversion complete in ${totalTime}s`);
+        console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+        resolve(true);
+      } else {
+        console.error(`\n❌ Conversion failed with code ${code} after ${totalTime}s`);
+        console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+        reject(new Error(`FFmpeg exited with code ${code}`));
+      }
+    });
+
+    ffmpegProcess.on('error', (error) => {
+      const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.error(`\n❌ Conversion error after ${totalTime}s:`, error.message);
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+      reject(error);
+    });
+  });
 }
 
 // Check if ffmpeg is installed
