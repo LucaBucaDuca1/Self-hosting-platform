@@ -17,18 +17,25 @@ async function convertToMP4(inputPath, outputPath) {
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
     console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-    console.log(`🎬 Starting video conversion to MP4`);
+    console.log(`🎬 Starting universal MP4 conversion`);
     console.log(`📁 Input: ${path.basename(inputPath)}`);
     console.log(`📁 Output: ${path.basename(outputPath)}`);
+    console.log(`🌐 Target: All devices (iPhone, Android, Smart TVs, browsers)`);
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 
     // Add progress flag to ffmpeg command
-    // Audio settings for maximum iPhone compatibility:
-    // - aac codec with strict experimental for better compatibility
-    // - 48000 Hz sample rate (iPhone standard)
+    // Video and audio settings for MAXIMUM UNIVERSAL COMPATIBILITY:
+    // Video:
+    // - H.264 baseline profile (most compatible, works on ALL devices)
+    // - Level 3.0 (supports up to 720p, works on old devices, Smart TVs)
+    // - yuv420p pixel format (required for web/mobile compatibility)
+    // - CRF 21 for good quality on large TV screens
+    // Audio:
+    // - AAC codec with 48kHz sample rate (universal standard)
     // - Stereo audio (2 channels)
     // - 192k bitrate for good quality
-    const command = `ffmpeg -i "${inputPath}" -c:v libx264 -preset fast -crf 23 -c:a aac -strict experimental -ar 48000 -ac 2 -b:a 192k -movflags +faststart -progress pipe:1 "${outputPath}" -y`;
+    // - movflags +faststart for fast web streaming
+    const command = `ffmpeg -i "${inputPath}" -c:v libx264 -profile:v baseline -level 3.0 -pix_fmt yuv420p -preset medium -crf 21 -c:a aac -strict experimental -ar 48000 -ac 2 -b:a 192k -movflags +faststart -progress pipe:1 "${outputPath}" -y`;
 
     const ffmpegProcess = exec(command, {
       maxBuffer: 1024 * 1024 * 10, // 10MB buffer
