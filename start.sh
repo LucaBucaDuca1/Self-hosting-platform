@@ -51,6 +51,73 @@ NPM_VERSION=$(npm -v)
 echo -e "${GREEN}✓ npm ${NPM_VERSION} detected${NC}"
 echo ""
 
+# Check if ffmpeg is installed
+if ! command_exists ffmpeg; then
+    echo -e "${YELLOW}⚠ ffmpeg is not installed${NC}"
+    echo -e "${BLUE}ℹ ffmpeg is required for automatic video conversion to MP4${NC}"
+    echo ""
+
+    # Detect OS and offer installation
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        if command_exists brew; then
+            echo -e "${YELLOW}Would you like to install ffmpeg now? (y/n)${NC}"
+            read -p "> " -n 1 -r
+            echo ""
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                echo -e "${BLUE}Installing ffmpeg via Homebrew...${NC}"
+                brew install ffmpeg
+                if [ $? -eq 0 ]; then
+                    echo -e "${GREEN}✓ ffmpeg installed successfully${NC}"
+                else
+                    echo -e "${RED}✗ Failed to install ffmpeg${NC}"
+                    echo -e "${YELLOW}⚠ Video uploads will work but won't be auto-converted to MP4${NC}"
+                fi
+            else
+                echo -e "${YELLOW}⚠ Skipping ffmpeg installation${NC}"
+                echo "You can install it later with: brew install ffmpeg"
+            fi
+        else
+            echo -e "${YELLOW}⚠ Homebrew not found${NC}"
+            echo "Install ffmpeg manually from: https://ffmpeg.org/"
+            echo "Or install Homebrew first: /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+        fi
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        # Linux
+        if command_exists apt-get; then
+            echo -e "${YELLOW}Would you like to install ffmpeg now? (y/n)${NC}"
+            read -p "> " -n 1 -r
+            echo ""
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                echo -e "${BLUE}Installing ffmpeg via apt-get...${NC}"
+                echo -e "${YELLOW}This requires sudo privileges${NC}"
+                sudo apt-get update && sudo apt-get install -y ffmpeg
+                if [ $? -eq 0 ]; then
+                    echo -e "${GREEN}✓ ffmpeg installed successfully${NC}"
+                else
+                    echo -e "${RED}✗ Failed to install ffmpeg${NC}"
+                    echo -e "${YELLOW}⚠ Video uploads will work but won't be auto-converted to MP4${NC}"
+                fi
+            else
+                echo -e "${YELLOW}⚠ Skipping ffmpeg installation${NC}"
+                echo "You can install it later with: sudo apt-get install ffmpeg"
+            fi
+        else
+            echo -e "${YELLOW}⚠ apt-get not found${NC}"
+            echo "Install ffmpeg manually from: https://ffmpeg.org/"
+            echo "Or use your package manager (yum, dnf, pacman, etc.)"
+        fi
+    else
+        echo -e "${YELLOW}⚠ Unsupported OS for automatic installation${NC}"
+        echo "Please install ffmpeg manually from: https://ffmpeg.org/"
+    fi
+    echo ""
+else
+    FFMPEG_VERSION=$(ffmpeg -version | head -n1 | cut -d' ' -f3)
+    echo -e "${GREEN}✓ ffmpeg ${FFMPEG_VERSION} detected${NC}"
+    echo ""
+fi
+
 # Check if dependencies need to be installed
 NEED_INSTALL=0
 
