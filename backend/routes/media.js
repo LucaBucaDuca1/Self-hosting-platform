@@ -2,12 +2,46 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { exec } = require('child_process');
+const util = require('util');
 const db = require('../config/database');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { requireLAN, rateLimit, auditLog } = require('../middleware/security');
 const { extractMetadata, isVideoFile } = require('../utils/fileUtils');
 
 const router = express.Router();
+const execPromise = util.promisify(exec);
+
+// Convert video to MP4 with H.264 codec for maximum compatibility
+async function convertToMP4(inputPath, outputPath) {
+  try {
+    // ffmpeg command to convert to MP4 with H.264 video and AAC audio
+    // -movflags +faststart makes it web-optimized (moov atom at beginning)
+    // -preset fast for good balance of speed/quality
+    // -crf 23 for good quality (lower = better quality, 18-28 is typical)
+    const command = `ffmpeg -i "${inputPath}" -c:v libx264 -preset fast -crf 23 -c:a aac -b:a 128k -movflags +faststart "${outputPath}" -y`;
+
+    console.log(`Converting video: ${path.basename(inputPath)} to MP4...`);
+    const { stdout, stderr } = await execPromise(command);
+
+    console.log(`Conversion complete: ${path.basename(outputPath)}`);
+    return true;
+  } catch (error) {
+    console.error('FFmpeg conversion error:', error);
+    throw new Error(`Video conversion failed: ${error.message}`);
+  }
+}
+
+// Check if ffmpeg is installed
+async function checkFFmpeg() {
+  try {
+    await execPromise('ffmpeg -version');
+    return true;
+  } catch (error) {
+    console.error('FFmpeg not found. Please install ffmpeg for video conversion.');
+    return false;
+  }
+}
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -111,6 +145,36 @@ router.post(
       // Series title is already stored in the series entry
     }
 
+    // Auto-convert to MP4 if not already MP4
+    let finalFilename = req.file.filename;
+    const fileExt = path.extname(req.file.filename).toLowerCase();
+
+    if (fileExt !== '.mp4' && fileExt !== '.m4v') {
+      const hasFFmpeg = await checkFFmpeg();
+
+      if (hasFFmpeg) {
+        try {
+          const inputPath = path.join(__dirname, '../../storage/videos', req.file.filename);
+          const outputFilename = req.file.filename.replace(/\.[^/.]+$/, '.mp4');
+          const outputPath = path.join(__dirname, '../../storage/videos', outputFilename);
+
+          // Convert to MP4
+          await convertToMP4(inputPath, outputPath);
+
+          // Delete original file after successful conversion
+          fs.unlinkSync(inputPath);
+
+          finalFilename = outputFilename;
+          console.log(`Video converted and saved as: ${finalFilename}`);
+        } catch (conversionError) {
+          console.error('Conversion failed, using original file:', conversionError);
+          // If conversion fails, use original file
+        }
+      } else {
+        console.warn('FFmpeg not installed, using original file format');
+      }
+    }
+
     // Insert the actual media (episode or movie)
     const result = db.prepare(`
       INSERT INTO media (
@@ -123,7 +187,7 @@ router.post(
       year || metadata.year,
       description || null,
       genres || null,
-      req.file.filename,
+      finalFilename,
       season || metadata.season,
       episode || metadata.episode,
       finalSeriesId || null,
@@ -135,7 +199,8 @@ router.post(
       title: episodeTitle,
       type: finalType,
       series_id: finalSeriesId,
-      filename: req.file.filename
+      filename: finalFilename,
+      converted: finalFilename !== req.file.filename
     });
   } catch (error) {
     console.error('Upload error:', error);

@@ -51,6 +51,24 @@ router.get('/video/:id', authenticateStream, (req, res) => {
     const fileSize = stat.size;
     const range = req.headers.range;
 
+    // Detect MIME type from file extension
+    const ext = path.extname(media.file_path).toLowerCase();
+    let contentType = 'video/mp4'; // Default to MP4
+
+    const mimeTypes = {
+      '.mp4': 'video/mp4',
+      '.m4v': 'video/mp4',
+      '.mov': 'video/quicktime',
+      '.webm': 'video/webm',
+      '.mkv': 'video/x-matroska',
+      '.avi': 'video/x-msvideo',
+      '.wmv': 'video/x-ms-wmv'
+    };
+
+    if (mimeTypes[ext]) {
+      contentType = mimeTypes[ext];
+    }
+
     // Optimal chunk size for local network streaming (2MB)
     const CHUNK_SIZE = 2 * 1024 * 1024;
 
@@ -77,10 +95,14 @@ router.get('/video/:id', authenticateStream, (req, res) => {
         'Content-Range': `bytes ${start}-${end}/${fileSize}`,
         'Accept-Ranges': 'bytes',
         'Content-Length': chunksize,
-        'Content-Type': 'video/mp4',
+        'Content-Type': contentType,
         'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
         'Connection': 'keep-alive',
-        'X-Content-Type-Options': 'nosniff'
+        'X-Content-Type-Options': 'nosniff',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+        'Access-Control-Allow-Headers': 'Range, Authorization',
+        'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges'
       };
 
       res.writeHead(206, head);
@@ -98,10 +120,14 @@ router.get('/video/:id', authenticateStream, (req, res) => {
       // No range, send entire file (for downloads or non-range browsers)
       const head = {
         'Content-Length': fileSize,
-        'Content-Type': 'video/mp4',
+        'Content-Type': contentType,
         'Accept-Ranges': 'bytes',
         'Cache-Control': 'public, max-age=31536000',
-        'Connection': 'keep-alive'
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+        'Access-Control-Allow-Headers': 'Range, Authorization',
+        'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges'
       };
 
       res.writeHead(200, head);
