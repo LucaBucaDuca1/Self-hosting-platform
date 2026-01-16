@@ -1,7 +1,29 @@
 import axios from 'axios';
 
+// Dynamic API URL configuration
+// When accessed from external devices, connect directly to backend server
+// When accessed locally, use Vite proxy for development
+const getApiBaseUrl = () => {
+  // In production or when accessing from external device
+  if (import.meta.env.PROD) {
+    return '/api';
+  }
+
+  // In development: check if accessing from external device
+  const hostname = window.location.hostname;
+
+  // If accessing via IP address (not localhost), connect directly to backend
+  if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+    // Use same hostname but port 5000 (backend port)
+    return `http://${hostname}:5000/api`;
+  }
+
+  // If on localhost, use Vite proxy
+  return '/api';
+};
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json'
   }
@@ -73,9 +95,18 @@ export const collections = {
 // Stream endpoints
 export const getStreamUrl = (mediaId) => {
   const token = localStorage.getItem('token');
-  return `/api/stream/video/${mediaId}${token ? `?token=${token}` : ''}`;
+  const baseUrl = getApiBaseUrl();
+  return `${baseUrl}/stream/video/${mediaId}${token ? `?token=${token}` : ''}`;
 };
-export const getPosterUrl = (filename) => filename ? `/api/stream/poster/${filename}` : null;
-export const getBackgroundUrl = (filename) => filename ? `/api/stream/background/${filename}` : null;
+export const getPosterUrl = (filename) => {
+  if (!filename) return null;
+  const baseUrl = getApiBaseUrl();
+  return `${baseUrl}/stream/poster/${filename}`;
+};
+export const getBackgroundUrl = (filename) => {
+  if (!filename) return null;
+  const baseUrl = getApiBaseUrl();
+  return `${baseUrl}/stream/background/${filename}`;
+};
 
 export default api;

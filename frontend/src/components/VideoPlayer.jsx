@@ -188,12 +188,29 @@ const VideoPlayer = ({
   };
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen();
-      setIsFullscreen(true);
+    // iOS Safari requires video element fullscreen, not container fullscreen
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+    if (isIOS && videoRef.current) {
+      // iOS specific fullscreen for video element
+      if (videoRef.current.webkitEnterFullscreen) {
+        try {
+          videoRef.current.webkitEnterFullscreen();
+        } catch (error) {
+          console.error('iOS fullscreen error:', error);
+        }
+      }
     } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
+      // Standard fullscreen API for other browsers
+      if (!document.fullscreenElement) {
+        containerRef.current?.requestFullscreen().catch(err => {
+          console.error('Fullscreen error:', err);
+        });
+        setIsFullscreen(true);
+      } else {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
     }
   };
 
