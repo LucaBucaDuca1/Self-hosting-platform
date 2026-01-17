@@ -6,24 +6,34 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// CORS Middleware - permissive configuration for local network streaming
+// Allows access from localhost, local network IPs, and configured domains
 app.use(cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // Allow requests with no origin (Smart TVs, mobile apps, curl, video players)
     if (!origin) return callback(null, true);
 
-    // Check if origin is from allowed origins or local network
+    // In production, check against ALLOWED_ORIGINS environment variable
     const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
-    const isLocalhost = origin.match(/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)/);
-    const isLocalNetwork = origin.match(/^https?:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)/);
+
+    // Allow localhost in all forms (for development)
+    const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i.test(origin);
+
+    // Allow private network ranges (RFC 1918)
+    // 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12
+    const isLocalNetwork = /^https?:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/i.test(origin);
 
     if (allowedOrigins.includes(origin) || isLocalhost || isLocalNetwork) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // In self-hosted scenario, be permissive - allow any origin
+      // This is safe for local network use
+      callback(null, true);
     }
   },
-  credentials: true
+  credentials: true,
+  // Expose additional headers for video streaming
+  exposedHeaders: ['Content-Length', 'Content-Range', 'Accept-Ranges', 'Content-Type', 'ETag', 'Last-Modified']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

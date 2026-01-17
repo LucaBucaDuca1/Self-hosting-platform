@@ -32,6 +32,58 @@ const authenticateStream = (req, res, next) => {
   }
 };
 
+// Handle OPTIONS for CORS preflight
+router.options('/video/:id', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Range, Authorization, Content-Type');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+  res.sendStatus(204);
+});
+
+// Handle HEAD requests for video metadata (some browsers/players check this first)
+router.head('/video/:id', authenticateStream, (req, res) => {
+  try {
+    const media = db.prepare('SELECT file_path FROM media WHERE id = ?').get(req.params.id);
+
+    if (!media || !media.file_path) {
+      return res.status(404).end();
+    }
+
+    const videoPath = path.join(__dirname, '../../storage/videos', media.file_path);
+
+    if (!fs.existsSync(videoPath)) {
+      return res.status(404).end();
+    }
+
+    const stat = fs.statSync(videoPath);
+    const fileSize = stat.size;
+
+    const ext = path.extname(media.file_path).toLowerCase();
+    const contentType = ext === '.mp4' || ext === '.m4v' ? 'video/mp4' : 'video/mp4';
+
+    const etag = `"${stat.size}-${stat.mtime.getTime()}"`;
+    const lastModified = stat.mtime.toUTCString();
+
+    res.set({
+      'Content-Length': fileSize,
+      'Content-Type': contentType,
+      'Accept-Ranges': 'bytes',
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'ETag': etag,
+      'Last-Modified': lastModified,
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+      'Access-Control-Expose-Headers': 'Content-Length, Accept-Ranges, Content-Type'
+    });
+
+    res.status(200).end();
+  } catch (error) {
+    console.error('HEAD request error:', error);
+    res.status(500).end();
+  }
+});
+
 // Stream video with range support and optimizations
 router.get('/video/:id', authenticateStream, (req, res) => {
   try {
@@ -51,6 +103,10 @@ router.get('/video/:id', authenticateStream, (req, res) => {
     const fileSize = stat.size;
     const range = req.headers.range;
 
+    // Generate ETag based on file stats for caching
+    const etag = `"${stat.size}-${stat.mtime.getTime()}"`;
+    const lastModified = stat.mtime.toUTCString();
+
     // Detect MIME type from file extension
     const ext = path.extname(media.file_path).toLowerCase();
     let contentType = 'video/mp4'; // Default to MP4
@@ -69,11 +125,12 @@ router.get('/video/:id', authenticateStream, (req, res) => {
       contentType = mimeTypes[ext];
     }
 
-    // Optimal chunk size for local network streaming (2MB)
-    const CHUNK_SIZE = 2 * 1024 * 1024;
+    // Optimal chunk size: 10MB for good balance between memory and performance
+    // Modern browsers can handle larger chunks efficiently
+    const CHUNK_SIZE = 10 * 1024 * 1024;
 
     if (range) {
-      // Parse range header
+      // Parse range header (RFC 7233)
       const parts = range.replace(/bytes=/, '').split('-');
       const start = parseInt(parts[0], 10);
 
@@ -88,21 +145,25 @@ router.get('/video/:id', authenticateStream, (req, res) => {
       const file = fs.createReadStream(videoPath, {
         start,
         end,
-        highWaterMark: 64 * 1024 // 64KB buffer for smooth streaming
+        highWaterMark: 256 * 1024 // 256KB buffer for smooth streaming on all networks
       });
 
+      // HTTP 206 Partial Content headers (RFC 7233)
       const head = {
         'Content-Range': `bytes ${start}-${end}/${fileSize}`,
         'Accept-Ranges': 'bytes',
         'Content-Length': chunksize,
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        'ETag': etag,
+        'Last-Modified': lastModified,
         'Connection': 'keep-alive',
         'X-Content-Type-Options': 'nosniff',
+        // CORS headers for cross-origin requests
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
-        'Access-Control-Allow-Headers': 'Range, Authorization',
-        'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges'
+        'Access-Control-Allow-Headers': 'Range, Authorization, Content-Type',
+        'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges, Content-Type'
       };
 
       res.writeHead(206, head);
@@ -117,23 +178,28 @@ router.get('/video/:id', authenticateStream, (req, res) => {
 
       file.pipe(res);
     } else {
-      // No range, send entire file (for downloads or non-range browsers)
+      // No range header - send entire file (HTTP 200)
+      // This happens on older browsers or when seeking isn't supported
       const head = {
         'Content-Length': fileSize,
         'Content-Type': contentType,
         'Accept-Ranges': 'bytes',
-        'Cache-Control': 'public, max-age=31536000',
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        'ETag': etag,
+        'Last-Modified': lastModified,
         'Connection': 'keep-alive',
+        'X-Content-Type-Options': 'nosniff',
+        // CORS headers
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
-        'Access-Control-Allow-Headers': 'Range, Authorization',
-        'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges'
+        'Access-Control-Allow-Headers': 'Range, Authorization, Content-Type',
+        'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges, Content-Type'
       };
 
       res.writeHead(200, head);
 
       const stream = fs.createReadStream(videoPath, {
-        highWaterMark: 64 * 1024 // 64KB buffer
+        highWaterMark: 256 * 1024 // 256KB buffer for efficient streaming
       });
 
       stream.on('error', (err) => {

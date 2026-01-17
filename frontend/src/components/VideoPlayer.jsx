@@ -31,6 +31,32 @@ const VideoPlayer = ({
   const controlsTimeoutRef = useRef(null);
   const containerRef = useRef(null);
 
+  // Fullscreen change detection - listen for all vendor prefixes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      );
+      setIsFullscreen(isCurrentlyFullscreen);
+    };
+
+    // Add listeners for all fullscreen change events
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -187,81 +213,72 @@ const VideoPlayer = ({
     }
   };
 
-  const toggleFullscreen = () => {
-    const element = videoRef.current;
-
-    if (!element) return;
-
-    // Check if we're already in fullscreen
-    const isInFullscreen =
+  const toggleFullscreen = async () => {
+    // Check if already in fullscreen
+    const isCurrentlyFullscreen = !!(
       document.fullscreenElement ||
       document.webkitFullscreenElement ||
       document.mozFullScreenElement ||
-      document.msFullscreenElement;
+      document.msFullscreenElement
+    );
 
-    if (isInFullscreen) {
-      // Exit fullscreen
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
-      }
-      setIsFullscreen(false);
-    } else {
-      // Enter fullscreen - try multiple methods for maximum compatibility
-
-      // Method 1: iOS Safari (iPhone/iPad)
-      if (element.webkitEnterFullscreen) {
-        try {
-          element.webkitEnterFullscreen();
-          setIsFullscreen(true);
-          return;
-        } catch (error) {
-          console.log('webkitEnterFullscreen failed, trying other methods');
+    if (isCurrentlyFullscreen) {
+      // EXIT FULLSCREEN - try all vendor-prefixed methods
+      try {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
         }
+      } catch (err) {
+        console.error('Exit fullscreen failed:', err);
       }
+      return;
+    }
 
-      // Method 2: Standard Fullscreen API
-      if (element.requestFullscreen) {
-        element.requestFullscreen().then(() => {
-          setIsFullscreen(true);
-        }).catch(err => {
-          console.log('requestFullscreen failed:', err);
-        });
+    // ENTER FULLSCREEN
+    const videoElement = videoRef.current;
+    const containerElement = containerRef.current;
+
+    if (!videoElement) return;
+
+    // iOS Safari - requires webkitEnterFullscreen on VIDEO element (not container)
+    // This is a non-standard API specific to iOS
+    if (videoElement.webkitEnterFullscreen && typeof videoElement.webkitEnterFullscreen === 'function') {
+      try {
+        videoElement.webkitEnterFullscreen();
+        return; // iOS fullscreen doesn't trigger fullscreenchange events
+      } catch (err) {
+        console.log('iOS fullscreen failed:', err);
+        // Fall through to try other methods
       }
-      // Method 3: Webkit (Safari, older Chrome)
-      else if (element.webkitRequestFullscreen) {
-        element.webkitRequestFullscreen();
-        setIsFullscreen(true);
+    }
+
+    // Standard Fullscreen API (modern browsers)
+    // Prefer video element fullscreen for better compatibility
+    const elementToFullscreen = videoElement;
+
+    try {
+      if (elementToFullscreen.requestFullscreen) {
+        await elementToFullscreen.requestFullscreen();
+      } else if (elementToFullscreen.webkitRequestFullscreen) {
+        // Safari
+        elementToFullscreen.webkitRequestFullscreen();
+      } else if (elementToFullscreen.mozRequestFullScreen) {
+        // Firefox
+        elementToFullscreen.mozRequestFullScreen();
+      } else if (elementToFullscreen.msRequestFullscreen) {
+        // IE11
+        elementToFullscreen.msRequestFullscreen();
+      } else {
+        console.warn('Fullscreen API not supported');
       }
-      // Method 4: Firefox
-      else if (element.mozRequestFullScreen) {
-        element.mozRequestFullScreen();
-        setIsFullscreen(true);
-      }
-      // Method 5: IE/Edge
-      else if (element.msRequestFullscreen) {
-        element.msRequestFullscreen();
-        setIsFullscreen(true);
-      }
-      // Fallback: Try container fullscreen
-      else if (containerRef.current) {
-        const container = containerRef.current;
-        if (container.requestFullscreen) {
-          container.requestFullscreen().catch(() => {});
-        } else if (container.webkitRequestFullscreen) {
-          container.webkitRequestFullscreen();
-        } else if (container.mozRequestFullScreen) {
-          container.mozRequestFullScreen();
-        } else if (container.msRequestFullscreen) {
-          container.msRequestFullscreen();
-        }
-        setIsFullscreen(true);
-      }
+    } catch (err) {
+      console.error('Enter fullscreen failed:', err);
     }
   };
 
@@ -340,13 +357,11 @@ const VideoPlayer = ({
         src={streamUrl}
         className="video-element"
         autoPlay
-        preload="auto"
         playsInline
-        webkit-playsinline="true"
-        x-webkit-airplay="allow"
+        preload="metadata"
         crossOrigin="anonymous"
         controlsList="nodownload"
-        disablePictureInPicture={false}
+        disableRemotePlayback={false}
         onTimeUpdate={handleVideoTimeUpdate}
         onLoadedMetadata={handleVideoLoadedMetadata}
         onPlay={handleVideoPlay}
@@ -355,7 +370,6 @@ const VideoPlayer = ({
         onWaiting={handleVideoWaiting}
         onCanPlay={handleVideoCanPlay}
         onClick={togglePlay}
-        style={{ width: '100%', height: '100%' }}
       >
         {subtitles && subtitles.map((subtitle, index) => (
           <track

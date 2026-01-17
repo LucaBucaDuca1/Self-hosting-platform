@@ -23,19 +23,41 @@ async function convertToMP4(inputPath, outputPath) {
     console.log(`🌐 Target: All devices (iPhone, Android, Smart TVs, browsers)`);
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 
-    // Add progress flag to ffmpeg command
-    // Video and audio settings for MAXIMUM UNIVERSAL COMPATIBILITY:
-    // Video:
-    // - H.264 baseline profile (most compatible, works on ALL devices)
-    // - Level 3.0 (supports up to 720p, works on old devices, Smart TVs)
-    // - yuv420p pixel format (required for web/mobile compatibility)
-    // - CRF 21 for good quality on large TV screens
-    // Audio:
-    // - AAC codec with 48kHz sample rate (universal standard)
-    // - Stereo audio (2 channels)
-    // - 192k bitrate for good quality
-    // - movflags +faststart for fast web streaming
-    const command = `ffmpeg -i "${inputPath}" -c:v libx264 -profile:v baseline -level 3.0 -pix_fmt yuv420p -preset medium -crf 21 -c:a aac -strict experimental -ar 48000 -ac 2 -b:a 192k -movflags +faststart -progress pipe:1 "${outputPath}" -y`;
+    // FFmpeg command for universal web/mobile/TV compatibility
+    // Based on official FFmpeg documentation and HTML5 video specs
+    //
+    // VIDEO SETTINGS:
+    // -c:v libx264: H.264/AVC video codec (RFC 6184, most universal codec)
+    // -profile:v main: Main profile (better compression than baseline, works on 99% devices)
+    // -level 4.0: Level 4.0 supports up to 1080p30, compatible with most devices since 2008
+    // -pix_fmt yuv420p: 4:2:0 chroma subsampling (required for web playback per HTML5 spec)
+    // -preset faster: Good speed/quality tradeoff (faster than medium, better than fast)
+    // -crf 23: Constant Rate Factor (18-28 range, 23 is default, good quality/size balance)
+    // -maxrate 5M -bufsize 10M: Rate control for consistent streaming quality
+    // -g 48: GOP size of 48 frames (2 seconds at 24fps, helps seeking)
+    //
+    // AUDIO SETTINGS:
+    // -c:a aac: AAC-LC audio codec (ISO 14496-3, universal standard)
+    // -b:a 128k: 128kbps audio bitrate (recommended for stereo per AAC spec)
+    // -ar 48000: 48kHz sample rate (professional standard, works everywhere)
+    // -ac 2: Stereo audio (2 channels)
+    //
+    // CONTAINER SETTINGS:
+    // -movflags +faststart: Move moov atom to beginning for progressive download
+    // -f mp4: Force MP4 container format
+    //
+    // STREAM MAPPING:
+    // -map 0:v:0: Map first video stream
+    // -map 0:a:0?: Map first audio stream if exists (? makes it optional)
+    //
+    const command = `ffmpeg -i "${inputPath}" \
+-map 0:v:0 -map 0:a:0? \
+-c:v libx264 -profile:v main -level 4.0 -pix_fmt yuv420p \
+-preset faster -crf 23 -maxrate 5M -bufsize 10M -g 48 \
+-c:a aac -b:a 128k -ar 48000 -ac 2 \
+-movflags +faststart -f mp4 \
+-progress pipe:1 -y \
+"${outputPath}"`.replace(/\n/g, ' ').replace(/\s+/g, ' ');
 
     const ffmpegProcess = exec(command, {
       maxBuffer: 1024 * 1024 * 10, // 10MB buffer
